@@ -1,0 +1,64 @@
+void eeerase(){
+  
+    digitalWrite(PIN_nOE, HIGH);
+    digitalWrite(PIN_nCE, HIGH);
+    digitalWrite(PIN_nWE, HIGH); 
+    delay(10);
+    SetAddress(0x5555);
+    delayMicroseconds(50);
+    SetData(0xAA);
+    digitalWrite(PIN_nCE, LOW);
+    digitalWrite(PIN_nWE, LOW); 
+    delay(10);
+    digitalWrite(PIN_nCE, HIGH);
+    digitalWrite(PIN_nWE, HIGH); 
+    delay(10);
+    SetAddress(0x2AAA);
+    delayMicroseconds(50);
+    SetData(0x55);
+    digitalWrite(PIN_nWE, LOW); 
+    digitalWrite(PIN_nWE, LOW); 
+    delay(10);
+    digitalWrite(PIN_nCE, HIGH);
+    digitalWrite(PIN_nWE, HIGH); 
+    delay(10);
+    SetAddress(0x5555);
+    delayMicroseconds(50);
+    SetData(0x80);
+    digitalWrite(PIN_nWE, LOW); 
+    digitalWrite(PIN_nWE, LOW); 
+    delay(10);
+    digitalWrite(PIN_nCE, HIGH);
+    digitalWrite(PIN_nWE, HIGH); 
+    delay(10);
+    SetAddress(0x5555);
+    delayMicroseconds(50);
+    SetData(0xAA);
+    digitalWrite(PIN_nWE, LOW); 
+    digitalWrite(PIN_nWE, LOW); 
+    delay(10);
+    digitalWrite(PIN_nCE, HIGH);
+    digitalWrite(PIN_nWE, HIGH); 
+    delay(10);
+    SetAddress(0x2AAA);
+    delayMicroseconds(50);
+    SetData(0x55);
+    digitalWrite(PIN_nWE, LOW); 
+    digitalWrite(PIN_nWE, LOW); 
+    delay(10);
+    digitalWrite(PIN_nCE, HIGH);
+    digitalWrite(PIN_nWE, HIGH); 
+    delay(10);
+    SetAddress(0x5555);
+    delayMicroseconds(50);
+    SetData(0x10);
+    digitalWrite(PIN_nWE, LOW); 
+    digitalWrite(PIN_nWE, LOW); 
+    delay(10);
+    digitalWrite(PIN_nCE, HIGH);
+    digitalWrite(PIN_nWE, HIGH); 
+    delay(10);
+    delay(200);
+  }
+  
+
