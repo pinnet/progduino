@@ -1,0 +1,316 @@
+if ((key >= '0' && key <= '9') || (key >= 'a' && key <= 'f')){                          // 0-9 a-f for shortcut key
+        
+        if (key == 'f'){                                                                    // f   Next list
+            dPage++;
+            DisplayCurrentPage();
+        } else  if (key == '0'){                                                            // 0   Previous list 
+            dPage--;
+            if (dPage < 0) dPage = 0;
+            DisplayCurrentPage();
+        } else if (view == VIEW_DIRECTORY){
+            char hex[2];
+            hex[0] = '0';
+            hex[1] = key;
+            int filenum = strtol(hex, NULL, 16);
+            filename = curdir[filenum];
+            view = VIEW_FILE;
+            DisplayCurrentPage();
+        } else if (view == VIEW_INFO){
+            char hex[2];
+            hex[0] = '0';
+            hex[1] = key;
+            int filenum = strtol(hex, NULL, 16);
+            Serial.println(curdir[filenum]);
+        }
+  } else if (key == 'g'){                                                                     // g 
+        unsigned int arg = hexUint(cmd[1]);      
+        currentPage = (arg & 0xFF00) >> 8;
+        if((currentPage * 256) >= romSize){ currentPage = 0;}
+        curpos = (arg & 0x00FF);
+        if(termMode) DisplayCurrentPage(); 
+      }
+      else if (key == 'i'){                                                                   // i
+        view = VIEW_INFO;
+        DisplayCurrentPage();
+      }
+      else if (key == 'k'){                                                                   // k
+        curpos += chunkSize; 
+      }
+      else if (key == 'l'){                                                                   // l
+        
+        if(cmd[1] !=0){ filename = cmd[1];
+          view = VIEW_FILE;
+        }
+        else {  
+          view = VIEW_DIRECTORY;
+        }
+        currentMode = MODE_FILE;
+        DisplayCurrentPage();   
+      }
+      else if (key == "m"){                                                                   // m 
+        cardStatus = MountSD();
+      }
+      else if (key == "n"){                                                                   // n 
+        DisplayCurrentPage();
+      }
+      else if (key == 'o'){                                                                   // o  .
+      
+      } 
+      else if (key == 'p'){                                                                   // p
+          if (cmd[1].toInt() >= 0){
+            currentPage = cmd[1].toInt(); 
+            if((currentPage * 256) >= romSize){ currentPage = 0;}
+            GetPage();
+            DisplayCurrentPage();
+        }
+        else {
+          DisplayCurrentPage(); 
+        }  
+      } 
+      else if (key == 'r'){                                                                     // r  
+        view = VIEW_INFO;
+        if(termMode) DisplayCurrentPage();     
+      }
+
+      else if (key == 's'){                                                                     // s 
+        
+        romSize = 0xFFFF;
+        if      (cmd[1] == "1K"  | cmd[1] == "1k" ){ romSize = romSize / 64;}
+        else if (cmd[1] == "2K"  | cmd[1] == "2k" ){ romSize = romSize / 32;}
+        else if (cmd[1] == "4K"  | cmd[1] == "4k" ){ romSize = romSize / 16;}
+        else if (cmd[1] == "8K"  | cmd[1] == "8k" ){ romSize = romSize / 8;}
+        else if (cmd[1] == "16K" | cmd[1] == "16k"){ romSize = romSize / 4;}
+        else if (cmd[1] == "32K" | cmd[1] == "32k"){ romSize = romSize / 2;}
+  
+        EEPROM.write(PSLOC_ROMSIZE,(romSize & 0xFF00) >> 8);
+        EEPROM.write(PSLOC_ROMSIZE + 1, romSize & 0x00FF);
+        
+        if(termMode) DisplayCurrentPage();
+      }
+
+      else if (key == 't'){                                                                      // t 
+        if (cmd[1] == "on"){
+          termMode = true;
+          SetTerm();
+          DisplayCurrentPage(); 
+          return;
+        }
+        else  if (cmd[1] == "off"){
+          termMode = false; 
+          return;    
+        }        
+        termMode = !termMode;
+        if (termMode){
+            SetTerm();
+            DisplayCurrentPage(); 
+        }
+        else{
+            UnsetTerm();
+            DisplayCurrentPage();         
+        }          
+      }
+      
+      else if (key == "u"){                                                                     // u    
+        if(cmd[1].length() != 1){      
+          siunit = char('K');
+          }  
+        else {
+          siunit = cmd[1][0];
+          }    
+        EEPROM.write(PSLOC_SIUNIT, siunit);
+      }
+      else if (key == 'v'){                                                                     // v
+      verify();                 
+      }   
+      else if (key == 'w'){                                                                     // w
+
+
+      if (currentMode == MODE_ROM){
+          
+          Serial.print("\r\nOutput to " + filename +". Saving.");
+
+        if(cmd[1] != 0){ filename = cmd[1];}                               // todo. find a more robust filter 
+
+        if (SD.exists(filename)){
+            SD.remove(filename);
+        } 
+        myFile = SD.open(filename, FILE_WRITE);
+        for (unsigned int a = 0 ; a <= (romSize / 256) ; a ++){
+          currentPage = a ;
+          GetRomPage(a);
+          if(termMode) term.position(22,0);
+          Serial.print("Writing page ");
+          Serial.print(a);
+          Serial.println(" to "+ filename);
+          
+          for (unsigned int ptr = 0; ptr < 256; ptr = ptr + fileChunk){
+            
+            SaveBuffer(ptr,fileChunk,myFile);
+            
+          } 
+        //if(termMode) DisplayCurrentPage(); 
+        }
+        myFile.println();
+        myFile.close(); 
+        if(termMode) DisplayCurrentPage(); 
+      }
+      else if (currentMode == MODE_FILE)
+      {
+        unsigned int offset = 0;
+        if(cmd[1] != 0) offset = cmd[1].toInt();
+
+          // if (offset > (romSize / 256)) offset = 0;
+              for (unsigned int a =0 ; a <= (romSize / 256) ; a ++){
+                  currentPage = a ;
+                  GetPage();
+                  if(termMode) term.position(22,0);
+                  Serial.print("Writing page ");
+                  Serial.print(a + offset);
+                  Serial.println(" to device");
+                  WriteBufferToEEPROM((a + offset)* 256, 256);  
+                }
+      }
+      
+      memset(buf,0,16);              
+      } 
+      
+      else if (key == 'x'){                                                               // x
+
+      if (view == VIEW_DIRECTORY){
+
+            if (sizeof(cmd[1]) != 0 ){
+                if (sizeof(cmd[1]) > 1){
+                  filename = cmd[1];
+                }else if (sizeof(cmd[1]) == 1){
+                    char hex[2];
+                    hex[0] = '0';
+                    hex[1] = cmd[1][0];
+                    int filenum = strtol(hex, NULL, 16);
+                    filename = curdir[filenum];
+                }
+                SD.remove(filename);
+            }
+                
+            DisplayCurrentPage();
+        } else if (currentMode == MODE_ROM){
+          
+            eeerase();
+            
+        }
+      
+        memset(buf,0,16);    
+      }  
+      else if (key == 'z'){                                                               // z  zero 
+        FormatPage(0);
+        if(termMode) term.position(22,0);
+        Serial.print("Zeroing device ");
+        WriteAllRom();
+            
+      } 
+      else if (key == 'y'){                                                                // y
+
+        if(cmd[1] != 0){ filename = cmd[1];}
+        
+        SD.remove(filename);
+        filename = "default.rom";
+      }  
+      else if (key == '!'){                                                                 // !  
+        currentPage = 0;
+        curpos = 0; 
+        if(termMode) DisplayCurrentPage();     
+      }
+
+      else if (key == ',' || key == '<' ){                                                  // < 
+          currentPage --; 
+        if((currentPage * 256) >= romSize){ currentPage = 0;}
+        DisplayCurrentPage();   
+      } 
+      else if (key == '.' || key == '>' ){                                                   // >      
+        
+        currentPage ++;
+        if((currentPage * 256) >= romSize ){ currentPage = 0;}
+        DisplayCurrentPage();
+        
+      }
+      else if (key == '@'){                                                                  // @  
+        if (cmd[1].toInt() > 0){
+          chunkSize = cmd[1].toInt();  
+        } 
+        else
+        { 
+          chunkSize = DEFAULT_CHUNKSIZE;
+        }
+        EEPROM.write(PSLOC_CHUNKSIZE, chunkSize);
+      }
+      else if (key == '?'|| key == 'h'){                                                     // ?
+        HelpPage();
+      }
+      else if (key == '+'){                                                                  // +  
+            if (curpos + chunkSize > 256){
+              currentPage ++;
+              if((currentPage * 256) >= romSize){ currentPage = 0;}
+            }
+            PrintBuffer(curpos,chunkSize,true);
+      }
+      else if (key == '%'){                                                                    // %
+        FactoryReset();
+      }
+      else if (key == '#'){                                                                    // #
+
+      // memset(pageBuff,0,pageSize);
+        
+          if (currentMode == MODE_ROM){
+            currentMode = MODE_FILE;
+            view = VIEW_FILE;
+          }
+          else if (currentMode == MODE_FILE){
+            currentMode = MODE_ROM;
+            view = VIEW_ROM;
+          } 
+          if (currentMode == MODE_BOOT){
+            currentMode = MODE_ROM;
+            view = VIEW_ROM;
+          }
+          DisplayCurrentPage(); 
+      }
+      else {                                                                                    // default
+        if(termMode) DisplayCurrentPage();
+        Serial.println(F("Command not recognised.\r\n")); 
+        HelpPage(); 
+      }
+    if (!termMode) Serial.print("OK>_");
+    }    EncoderState checkEncoder(){
+
+    byte encsw = digitalRead(ENCSW);
+    byte enca  = digitalRead(ENCA);
+    byte encb  = digitalRead(ENCB);
+
+    if (encsw != _encsw) {    
+      _encsw = encsw;
+      return SELECTED;
+    }
+    if (enca != _enca) {
+      _enca = enca;
+      return  encoderDirection(A);
+    }
+    if (encb != _encb) {
+      _encb = encb;
+      return  encoderDirection(B);
+    }
+}
+
+void setupEncoder(){
+
+_encsw = digitalRead(ENCSW);
+_enca  = digitalRead(ENCA);
+_encb  = digitalRead(ENCB);
+
+}
+EncoderState encoderDirection(EncoderState encstate){
+
+if (encstate == A){
+
+  
+}
+
+}

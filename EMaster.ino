@@ -1,5 +1,5 @@
 /*
-MIT License
+
 
 Copyright (c) 2017 Danny Arnold
 
@@ -21,32 +21,48 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
-
+#include <TimerThree.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include <avr/pgmspace.h>
 #include <BasicTerm.h>
 #include <SPI.h>
 #include <SD.h>
 #include <EEPROM.h>
-#include "Timer.h"
 #include "EMaster.h"
+#include <Adafruit_NeoPixel.h>
+#include <avr/power.h>
 
+#define TERM_HEIGHT 25
+#define TERM_WIDTH  80
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
+#define OLED_RESET     -1
+#define PIN 5
+#define NUMPIXELS 1
+#define TIMEOUT 6000
+
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 BasicTerm term(&Serial);
-Timer t; 
 Sd2Card card;
 SdVolume volume;
 File root;
 
-const String Version = "1.02A"; 
+int16_t last, value;
+const String Version = "1.04A"; 
 
 bool termMode = true;                         // Term Mode on off
-const int chipSelect = 53;                    // SSD CE
+bool sure = false;                            // Sanity Check
+const int chipSelect = 53;                    // SD CE
 byte g_cmd[80];                               // strings received from the controller will go in here
 int dPage = 0;
 
 static const int pageSize = 256;              // Size of Page
 unsigned long  BAUD_RATE = 115200;            // Terminal Speed
-byte pageBuff[pageSize];                      // Buffer for a page
+static byte pageBuff[pageSize];               // Buffer for a page
 byte currentPage = 0;                         // Current page of rom
 int chunkSize;                                // Chunk Size of bulk mode transmission
 byte curpos = 0;                              // Current position pointer
@@ -56,13 +72,21 @@ unsigned int filePointer;
 int fileChunk = 16;
 String cmd[3];
 String filename = "default.rom";
+String lastfilename = filename;
+String devicetype = "AT27C512";
 String curdir[16];
+static char buf[16];
+unsigned int arg;
+byte _encsw = 0;
+byte _enca =  0;
+byte _encb =  0;
+unsigned int count = 0;
 
 SDStatus cardStatus  = SDS_UNMOUNTED;
 EditorMode currentMode = MODE_BOOT; 
 ViewMode view = VIEW_BOOT;
 File myFile;
-
+SanityCheck doFunction = UNKNOWN;
 
 /*******************************************************************************************************************************
  *                                                                                                                         SETUP
@@ -70,47 +94,51 @@ File myFile;
 ********************************************************************************************************************************/
 void setup()
 {
-   SetHardwarePins(); 
-   SetDataLinesAsInputs();
-                                                                                                    // Load values from device ;
-  siunit =    EEPROM.read(PSLOC_SIUNIT);
-  chunkSize = EEPROM.read(PSLOC_CHUNKSIZE);
-  romSize =   EEPROM.read(PSLOC_ROMSIZE) << 8;
-  romSize +=  EEPROM.read(PSLOC_ROMSIZE + 1);
+    Timer3.initialize(10000);
+    Timer3.attachInterrupt(timerint);
+
+    pixels.begin(); 
+    pixels.clear();
+    pixels.show();
+    display.setRotation(2);
+    display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+    display.clearDisplay();
+    display.display();
    
-  Serial.begin(BAUD_RATE);
-  memset(pageBuff,0,pageSize);                                                                            // Clear Page Buffer ;
+    term.init();
+    SetHardwarePins(); 
+    SetDataLinesAsInputs();
+                                                                                                    // Load values from device ;
+    siunit =    EEPROM.read(PSLOC_SIUNIT);
+    chunkSize = EEPROM.read(PSLOC_CHUNKSIZE);
+    romSize =   EEPROM.read(PSLOC_ROMSIZE) << 8;
+    romSize +=  EEPROM.read(PSLOC_ROMSIZE + 1);
+
+    Serial.begin(BAUD_RATE);
+    memset(buf,0,16); 
+    memset(pageBuff,0,pageSize);                                                                            // Clear Page Buffer ;
   
-  t.oscillate(PIN_LED_RED,100,LOW);
+    //t.oscillate(PIN_LED_RED,100,LOW);
   
-  SetAddress(0);
-  //Serial.println( (MountSD() == SDS_MOUNTED)? "Mounted":" Unmounted");
-  cardStatus = MountSD();
-  DisplayCurrentPage();
+    SetAddress(0);
+    Serial.println( (MountSD() == SDS_MOUNTED)? "Mounted":"Unmounted");
+    cardStatus = MountSD();
+    DisplayCurrentPage();
   
 }
 /*******************************************************************************************************************************
  * 
- * TODO: Fix 'cancel input' bug                                                                                             LOOP
+ *                                                                                                                          LOOP
 ********************************************************************************************************************************/
+
 void loop()
 {
-  static char buf[16];
-  //memset(buf,0,16);
-      
-  if (readline(Serial.read(), buf, 16) > 0) {                                              // Read Serial until input end   ;
-    char * p_args;                                                           
-    p_args = strtok (buf," \n\r");                                                         // Split args into command array ;
-    for(byte x=0; x < 3; x++){                                                             // loop around remaining input   ;
-      cmd[x]= p_args;
-      p_args = strtok (NULL, " \n\r");                                                     // split next input to command array ;
-    }
-    char key = cmd[0][0];                                                                  // get first char in string ;
-    if (key < 97 && key > 65){                                                             // fix case of char to lower ;
-      key += 32;
-    }   
+  
+  if ( readline(Serial.read(), buf, 16) > 0 ){                                              // Read Serial until input end   ;
 
-    if ((key >= '0' && key <= '9') || (key >= 'a' && key <= 'f')){                          // 0-9 a-f for file chooser
+    char key = parsecommand(buf);
+    sure = false;
+    if ((key >= '0' && key <= '9') || (key >= 'a' && key <= 'f')){                          // 0-9 a-f for shortcut
         
         if (key == 'f'){                                                                    // f   Next list
             dPage++;
@@ -134,437 +162,241 @@ void loop()
             int filenum = strtol(hex, NULL, 16);
             Serial.println(curdir[filenum]);
         }
-  } else if (key == 'g'){                                                                     // g 
-        unsigned int arg = hexUint(cmd[1]);      
-        currentPage = (arg & 0xFF00) >> 8;
-        if((currentPage * 256) >= romSize){ currentPage = 0;}
-        curpos = (arg & 0x00FF);
-        if(termMode) DisplayCurrentPage(); 
-      }
-      else if (key == 'i'){                                                                   // i
-        view = VIEW_INFO;
-        DisplayCurrentPage();
-      }
-      else if (key == 'k'){                                                                   // k
-        curpos += chunkSize; 
-      }
-      else if (key == 'l'){                                                                   // l
-        
-        if(cmd[1] !=0){ filename = cmd[1];
-          view = VIEW_FILE;
-        }
-        else {  
-          view = VIEW_DIRECTORY;
-        }
-        currentMode = MODE_FILE;
-        DisplayCurrentPage();   
-      }
-      else if (key == "m"){                                                                   // m 
-        cardStatus = MountSD();
-      }
-      else if (key == "n"){                                                                   // n 
-        DisplayCurrentPage();
-      }
-      else if (key == 'o'){                                                                   // o  .
-      
-      } 
-      else if (key == 'p'){                                                                   // p
-          if (cmd[1].toInt() >= 0){
-            currentPage = cmd[1].toInt(); 
-            if((currentPage * 256) >= romSize){ currentPage = 0;}
-            GetPage();
-            DisplayCurrentPage();
-        }
-        else {
-          DisplayCurrentPage(); 
-        }  
-      } 
-      else if (key == 'r'){                                                                     // r  
-        view = VIEW_INFO;
-        if(termMode) DisplayCurrentPage();     
-      }
-
-      else if (key == 's'){                                                                     // s 
-        
-        romSize = 0xFFFF;
-        if      (cmd[1] == "1K"  | cmd[1] == "1k" ){ romSize = romSize / 64;}
-        else if (cmd[1] == "2K"  | cmd[1] == "2k" ){ romSize = romSize / 32;}
-        else if (cmd[1] == "4K"  | cmd[1] == "4k" ){ romSize = romSize / 16;}
-        else if (cmd[1] == "8K"  | cmd[1] == "8k" ){ romSize = romSize / 8;}
-        else if (cmd[1] == "16K" | cmd[1] == "16k"){ romSize = romSize / 4;}
-        else if (cmd[1] == "32K" | cmd[1] == "32k"){ romSize = romSize / 2;}
-  
-        EEPROM.write(PSLOC_ROMSIZE,(romSize & 0xFF00) >> 8);
-        EEPROM.write(PSLOC_ROMSIZE + 1, romSize & 0x00FF);
-        
-        if(termMode) DisplayCurrentPage();
-      }
-
-      else if (key == 't'){                                                                      // t 
-        if (cmd[1] == "on"){
-          termMode = true;
-          SetTerm();
-          DisplayCurrentPage(); 
-          return;
-        }
-        else  if (cmd[1] == "off"){
-          termMode = false; 
-          return;    
-        }        
-        termMode = !termMode;
-        if (termMode){
-            SetTerm();
-            DisplayCurrentPage(); 
-        }
-        else{
-            UnsetTerm();
-            DisplayCurrentPage();         
-        }          
-      }
-      
-      else if (key == "u"){                                                                     // u    
-        if(cmd[1].length() != 1){      
-          siunit = char('K');
-          }  
-        else {
-          siunit = cmd[1][0];
-          }    
-        EEPROM.write(PSLOC_SIUNIT, siunit);
-      }
-      else if (key == 'v'){                                                                     // v
-      verify();                 
-      }   
-      else if (key == 'w'){                                                                     // w
-
-
-      if (currentMode == MODE_ROM){
-          
-          Serial.print("\r\nOutput to " + filename +". Saving.");
-
-        if(cmd[1] != 0){ filename = cmd[1];}                               // todo. find a more robust filter 
-
-        if (SD.exists(filename)){
-            SD.remove(filename);
-        } 
-        myFile = SD.open(filename, FILE_WRITE);
-        for (unsigned int a = 0 ; a <= (romSize / 256) ; a ++){
-          currentPage = a ;
-          GetRomPage(a);
-          if(termMode) term.position(22,0);
-          Serial.print("Writing page ");
-          Serial.print(a);
-          Serial.println(" to "+ filename);
-          
-          for (unsigned int ptr = 0; ptr < 256; ptr = ptr + fileChunk){
-            
-            SaveBuffer(ptr,fileChunk,myFile);
-            
-          } 
-        //if(termMode) DisplayCurrentPage(); 
-        }
-        myFile.println();
-        myFile.close(); 
-        if(termMode) DisplayCurrentPage(); 
-      }
-      else if (currentMode == MODE_FILE)
-      {
-        unsigned int offset = 0;
-        if(cmd[1] != 0) offset = cmd[1].toInt();
-
-          // if (offset > (romSize / 256)) offset = 0;
-              for (unsigned int a =0 ; a <= (romSize / 256) ; a ++){
-                  currentPage = a ;
-                  GetPage();
-                  if(termMode) term.position(22,0);
-                  Serial.print("Writing page ");
-                  Serial.print(a + offset);
-                  Serial.println(" to device");
-                  WriteBufferToEEPROM((a + offset)* 256, 256);  
-                }
-      }
-      
-                    
-      } 
-      
-      else if (key == 'x'){                                                               // x
-        eeerase();
-      
-            
-      }  
-      else if (key == 'z'){                                                               // z  zero 
-        FormatPage(0);
-        if(termMode) term.position(22,0);
-        Serial.print("Zeroing device ");
-        WriteAllRom();
-            
-      } 
-      else if (key == 'y'){                                                                // y
-
-        if(cmd[1] != 0){ filename = cmd[1];}
-        
-        SD.remove(filename);
-        filename = "default.rom";
-      }  
-      else if (key == '!'){                                                                 // !  
-        currentPage = 0;
-        curpos = 0; 
-        if(termMode) DisplayCurrentPage();     
-      }
-
-      else if (key == ',' || key == '<' ){                                                  // < 
-          currentPage --; 
-        if((currentPage * 256) >= romSize){ currentPage = 0;}
-        DisplayCurrentPage();   
-      } 
-      else if (key == '.' || key == '>' ){                                                   // >      
-        
-        currentPage ++;
-        if((currentPage * 256) >= romSize ){ currentPage = 0;}
-        DisplayCurrentPage();
-        
-      }
-      else if (key == '@'){                                                                  // @  
-        if (cmd[1].toInt() > 0){
-          chunkSize = cmd[1].toInt();  
-        } 
-        else
-        { 
-          chunkSize = DEFAULT_CHUNKSIZE;
-        }
-        EEPROM.write(PSLOC_CHUNKSIZE, chunkSize);
-      }
-      else if (key == '?'|| key == 'h'){                                                     // ?
-        HelpPage();
-      }
-      else if (key == '+'){                                                                  // +  
-            if (curpos + chunkSize > 256){
-              currentPage ++;
-              if((currentPage * 256) >= romSize){ currentPage = 0;}
-            }
-            PrintBuffer(curpos,chunkSize,true);
-      }
-      else if (key == '%'){                                                                    // %
-        FactoryReset();
-      }
-      else if (key == '#'){                                                                    // #
-
-      // memset(pageBuff,0,pageSize);
-        
-          if (currentMode == MODE_ROM){
-            currentMode = MODE_FILE;
-            view = VIEW_FILE;
+        memset(buf,0,16);
+  } else {
+          switch (key){
+            case 'g' :
+                arg = hexUint(cmd[1]);      
+                currentPage = (arg & 0xFF00) >> 8;
+                if((currentPage * 256) >= romSize){ currentPage = 0;}
+                curpos = (arg & 0x00FF);
+                if(termMode) DisplayCurrentPage(); 
+              break;
+            case 'i' :
+                view = VIEW_INFO;
+                DisplayCurrentPage();
+              break;
+            case 'k' :
+                curpos += chunkSize;
+              break;
+            case 'l' :
+                loadfile();
+              break;
+            case 'm' :
+                changeMode();
+              break;
+            case 'n' :
+                filename = lastfilename;
+                DisplayCurrentPage();
+              break;
+            case 'p' :
+                setpage();
+              break;
+            case 'q' :
+              break;
+            case 'r' :
+                setdevice();   
+              break;
+            case 's' :
+                setsize();
+              break;
+            case 't' :
+                terminalmode();         
+              break;
+            case 'u' :
+                setunit();
+              break;
+            case 'v' :
+                verify();  
+              break;
+            case 'w' :
+                write();
+              break;
+            case 'x' :
+                erase();
+              break;
+            case 'y' :
+               sanitycheck();
+              break;
+            case 'z' :
+                zero();
+              break;
+            case '!' :
+                resetpage();
+              break;
+            case '<' :
+                lastpage();
+              break;
+            case '>' :
+                nextpage();
+              break;
+            case ',' :
+                lastpage();
+              break;
+            case '.' :
+                nextpage();
+              break;
+            case '@' :
+                setchunksize();
+              break;
+            case '?' :
+                HelpPage();
+              break;
+            case '+' :
+                cont();
+              break;
+            case '%' :
+                FactoryReset();
+              break;
+            case '#' :
+                swappages();
+              break;
+            default :
+              printinfo("Error","Command not recognised"); 
+              HelpPage(); 
           }
-          else if (currentMode == MODE_FILE){
-            currentMode = MODE_ROM;
-            view = VIEW_ROM;
-          } 
-          if (currentMode == MODE_BOOT){
-            currentMode = MODE_ROM;
-            view = VIEW_ROM;
-          }
-          DisplayCurrentPage(); 
-      }
-      else {                                                                                    // default
-        if(termMode) DisplayCurrentPage();
-        Serial.println(F("Command not recognised.\r\n")); 
-        HelpPage(); 
-      }
-    if (!termMode) Serial.print("OK>_");
-    }    
-}
-void GetPage(){
-  
-  if (currentMode == MODE_ROM){
-        GetRomPage(currentPage);
-     }
-  else if (currentMode == MODE_FILE){
-        GetFilePage(currentPage);
-     }  
-}
-void DisplayCurrentPage(){
-  GetPage();
-  String line = "";
-  
-  if (termMode) SetTerm();
-  if(view == VIEW_DIRECTORY){
-    
-  }
-  if (currentMode == MODE_ROM){
-       if (termMode)  term.set_color(R_headerForeground,R_headerBackground);
-        line = "ROM :: Type 16c256 : Page " + String(currentPage) + " / "+ String((romSize /256)) +" : Size "+ String(romSize)+" bytes";
-  }
-  else if (currentMode == MODE_FILE){
-       if (termMode)  term.set_color(F_headerForeground,F_headerBackground);
-        line = "FILE :: " + filename + " : Page " + String(currentPage) + " / "+ String((romSize /256)) + " : "; 
-        line += (cardStatus != SDS_MOUNTED) ?  "Not Mounted" : "file count";
-   }
-   else if (currentMode == MODE_BOOT){
-     line = "? = help for more infomation";
-    }
-
-  if (termMode) term.cls();   
-  if (line != ""){
-  Serial.println("\t" + pad2center(" Eprom Master (c) Danny Arnold 2017 "+ Version + " ",56,"-"));                      //  header
-  Serial.println("\t" + pad2center(line,56," "));
-  Serial.println(F("\t-------------------------------------------------------- "));
-  }
- //---------------------------------------------------------------------------------------------------------------------------------------------------------
-
-if (view == VIEW_ROM){
-  if (termMode) {
-    term.set_color(romPageForeground,romPageBackground);
-    blankpage();
-  }
-  displaybuff(pageBuff,0,pageSize);
-}
-else if (view == VIEW_DIRECTORY){
-  if (termMode){
-    term.set_color(romPageForeground,romPageBackground);
-    blankpage();
-  }
-  myFile = SD.open("/");
-  myFile.rewindDirectory();
-  printDirectory(myFile,dPage,LIST);
-  if (termMode)term.position(19,0);  
-}
-else if (view == VIEW_FILE){
-  if (termMode){
-    term.set_color(filePageForeground,filePageBackground);
-     blankpage();
-  }
-  displaybuff(pageBuff,0,pageSize);    
-}
-else if (view == VIEW_INFO){
-  if (termMode){
-    term.set_color(romPageForeground,romPageBackground);
-     blankpage();
-     
-  }
-   myFile = SD.open("/DEVICE/");
-   myFile.rewindDirectory();
-   printDirectory(myFile,dPage,INFO);
-
-   
-}
-else if (view == VIEW_BOOT){
-
-    if (!SD.begin(24)) {
-    Serial.println("initialization failed!");
-    }
-    else{
-      if (!SD.exists(filename)){
-        myFile = SD.open(filename, FILE_WRITE);
-        myFile.close();
-      }
-    } 
-    view = VIEW_ROM;
-}
- //------------------------------------------------------------------------------------------------------------------------
-  if (view == VIEW_ROM){
-      if (termMode) term.set_color(R_footerForeground,R_footerBackground);
-      line = "p (XXX) = page: > = next: < = back: s (XXK) = size";
-  }
-  else if (view == VIEW_FILE){
-        if (termMode) term.set_color(F_footerForeground,F_footerBackground);
-        line = "p (XXX) = page: > = next: < = back: s (XXK) = size";
-  }
-   else if (view == VIEW_DIRECTORY){
-        if (termMode) term.set_color(F_footerForeground,F_footerBackground);
-        line = "l = List Dir : Choose 1 - F : l (filename) = Load";
-  }
-  else if (view == VIEW_INFO){
-       
-        if (termMode){
-
-          if(currentMode == MODE_FILE){
-             term.set_color(F_footerForeground,F_footerBackground);}
-          else{}
-
           
-          term.position(19,0);
-        }
-        line = "Choose Device";
+          memset(buf,0,16);
+    }
   }
-  if (currentMode == MODE_BOOT){
-        currentMode = MODE_ROM;
-         
-        line = "Press tab to continue";
-       // return;
-  }
-  if (line != ""){
-  Serial.println(F("\t-------------------------------------------------------- "));                       //   footer
-  Serial.println("\t" + pad2center(line,58," "));
-  Serial.println(F("\t-------------------------------------------------------- ")); 
-  } 
+  sleep();
 }
-void HelpPage(){
-  char buffer[165];
-  if (termMode){
-    term.set_color(helpPageForeground,helpPageBackground);
-    term.cls();
-    term.position(0,0);
-  }
-  Serial.println("\r\nRom Master by Danny Arnold (2017) firmware version " + Version + "\r\n");
-  Serial.println(F("-------------------------------------------------------------------------------- ")); 
-  for (int i = 0; i < 16; i++){
-    strcpy_P(buffer, (char*)pgm_read_word(&(string_table[i]))); 
-    Serial.print(buffer);           
-  }
-  Serial.println(F("Help\t\t\t?\tThis help page\r\n"));
-}
-static void displaybuff(byte *epm,word address,word datalength)
+int readline(int readch, char *buffer, int len)
 {
-  char lbuf[82];
-  char *x;
-  int i,j;
-  
-  for (i=0; i < datalength; i+=16) {
-    x=lbuf;
-    sprintf(x,"   %02X%02X: ",currentPage,i);
-    x+=9;
-    for (j=0; j<16; j++) {
-      sprintf(x," %02X",epm[i+j]);
-      x+=3;
+  static int pos = 0;
+  static bool escape = false;
+  static int count = 0;
+  int rpos;
+if (termMode){
+  term.show_cursor(false);
+}
+
+  if (readch > 0) {
+
+    switch (readch) {
+
+      case '$':
+           if (termMode){
+              buffer[pos++] = char('l');
+              rpos = pos;
+              pos = 0;// Reset position index ready for next time
+              return rpos;}
+        break;
+      case '\e':
+           escape= true;
+           buffer[pos] = 0;
+           return;
+        break;
+      case '\f': // forward
+       if (termMode){
+          buffer[pos++] = char('.');
+          rpos = pos;
+          pos = 0;// Reset position index ready for next time
+          return rpos;
+        }
+        break;
+      case '\b': // goback 
+       if (termMode){
+          buffer[pos--] = 0;
+          rpos = pos;
+          pos = 0;// Reset position index ready for next time
+          return rpos;
+        }
+        break;
+        
+      case '\t': // Return on TAB
+        if (termMode){
+          buffer[pos++] = char('#');
+          rpos = pos;
+          pos = 0;// Reset position index ready for next time
+          return rpos;
+        }
+        break; 
+        
+      case '\r': // Return on CR
+
+        if (termMode && pos <=0){
+            buffer[pos++] = char('.');
+            rpos = pos;
+            pos = 0;// Reset position index ready for next time
+            return rpos;
+        }
+          rpos = pos;
+          pos = 0;// Reset position index ready for next time
+          return rpos;
+
+      case '=': // Return on CR
+
+          if (termMode && pos <=0){
+              buffer[pos++] = char('.');
+              rpos = pos;
+              pos = 0;// Reset position index ready for next time
+              return rpos;
+          }
+          rpos = pos;
+          pos = 0;// Reset position index ready for next time
+          return rpos;
+      case '-': // Return on CR
+
+          if (termMode && pos <=0){
+              buffer[pos++] = char(',');
+              rpos = pos;
+              pos = 0;// Reset position index ready for next time
+              return rpos;
+          }
+          rpos = pos;
+          pos = 0;// Reset position index ready for next time
+          return rpos;
+      default:
+     
+         if (pos < len-1) {
+          
+          if (escape){
+            count += 1;
+            if (count > 3){
+              escape = false;
+              count = 0;
+              buffer[pos--] = 0;
+              buffer[pos--] = 0;
+              buffer[pos--] = 0;
+            }
+            
+          }
+          else{
+            //Serial.print(char(readch));
+            buffer[pos++] = readch;
+            buffer[pos] = 0;
+          }
+          
+        }
     }
-    *x=32;
-    x+=1;
-    *x=32;
-    x+=1;
-    for (j=0; j<16; j++) {
-      if (epm[i+j]>=32 && epm[i+j]<127) *x=epm[i+j];
-      else *x=46;
-      x++;
-    }
-    for (int space = 0; space < 5;space++){
-        *x=32;
-        x++;
-    }
-    *x=0;
-    Serial.println(lbuf);   
+    
+
+    if (termMode) {
+        term.position(22,0);
+        Serial.print('['); 
+        Serial.print(buffer);
+        Serial.print("]                                 "); 
+        term.position(22,0); 
+     } 
   }
+
+  // No end of line has been found, so return -1.
+  return -1;
 }
-void(* ResetFunc) (void) = 0; //declare reset function @ address 0
-void FactoryReset(){
-   if (termMode){  term.set_attribute(BT_BLINK); }
-   Serial.println("RESETING TO FACTORY DEFAULTS PLEASE WAIT"); 
-   EEPROM.write(PSLOC_SIUNIT, DEFAULT_SIUNIT);
-   EEPROM.write(PSLOC_CHUNKSIZE, DEFAULT_CHUNKSIZE);
-   EEPROM.write(PSLOC_ROMSIZE, (DEFAULT_ROMSIZE & 0xFF00) >> 8);
-   EEPROM.write(PSLOC_ROMSIZE + 1, (DEFAULT_ROMSIZE & 0x00FF) );
-   
-   delay(1500);
-   if (termMode){ UnsetTerm(); }
-   delay(1500);
-   ResetFunc();
+char parsecommand(char* buf){
+
+   char * p_args;                                                           
+        p_args = strtok (buf," \n\r");                                                         // Split args into command array ;
+        for(byte x=0; x < 3; x++){                                                             // loop around remaining input   ;
+          cmd[x]= p_args;
+          p_args = strtok (NULL, " \n\r");                                                     // split next input to command array ;
+        }
+        char key = cmd[0][0];                                                                  // get first char in string ;
+        if (key < 97 && key > 65){                                                             // fix case of char to lower ;
+          key += 32;
+        }   
+
+  return char(key);
 }
-bool areyousure(){                      // TODO: make this work
-  static char buf[2];
-      
-  if (readline(Serial.read(), buf, 2) > 0) {
-    if (buf[0] == 'y') {
-      return true;
-    }
-    else{  return false;   }
-    }
- }
 

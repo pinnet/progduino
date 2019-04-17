@@ -57,9 +57,13 @@ SOFTWARE.
 #define PIN_D4  35
 #define PIN_D3  36
 
-#define PIN_HEARTBEAT 13
-#define PIN_LED_RED 13
-#define PIN_LED_GREEN 12
+#define ENCSW  13
+#define ENCA    7
+#define ENCB    6
+
+#define PIN_HEARTBEAT 4
+#define PIN_LED_RED 5
+#define PIN_LED_GREEN 4
 
 const char hex[] = {
   '0', '1', '2', '3', '4', '5', '6', '7',
@@ -108,20 +112,30 @@ enum DirMode{
   LIST,
   INFO
   };
+enum EncoderState{
+  FORWARD,
+  BACKWARD,
+  SELECTED,
+  A,
+  B
+  };
+enum SanityCheck{
+  UNKNOWN,WRITE,ERASE,ZERO
+};
   
-uint8_t R_headerBackground    = BT_BLUE;
-uint8_t R_headerForeground    = BT_WHITE;
-uint8_t R_footerBackground    = BT_BLUE;
-uint8_t R_footerForeground    = BT_WHITE;
-uint8_t F_headerBackground    = BT_WHITE;
-uint8_t F_headerForeground    = BT_BLUE;
-uint8_t F_footerBackground    = BT_WHITE;
-uint8_t F_footerForeground    = BT_BLUE;
+uint8_t R_headerBackground    = BT_BLACK;
+uint8_t R_headerForeground    = BT_YELLOW;
+uint8_t R_footerBackground    = BT_BLACK;
+uint8_t R_footerForeground    = BT_YELLOW;
+uint8_t F_headerBackground    = BT_BLACK;
+uint8_t F_headerForeground    = BT_WHITE;
+uint8_t F_footerBackground    = BT_BLACK;
+uint8_t F_footerForeground    = BT_WHITE;
 
 
-uint8_t romPageBackground   = BT_BLUE;
-uint8_t romPageForeground   = BT_YELLOW;
-uint8_t filePageBackground  = BT_WHITE;
-uint8_t filePageForeground  = BT_BLACK;
-uint8_t helpPageBackground  = BT_YELLOW;
-uint8_t helpPageForeground  = BT_BLACK;
+uint8_t romPageBackground   = BT_BLACK;
+uint8_t romPageForeground   = BT_GREEN;
+uint8_t filePageBackground  = BT_BLACK;
+uint8_t filePageForeground  = BT_YELLOW;
+uint8_t helpPageBackground  = BT_BLACK;
+uint8_t helpPageForeground  = BT_GREEN;

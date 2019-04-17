@@ -222,42 +222,6 @@ void ReadFileIntoBuffer(unsigned long addr, int size)
   digitalWrite(PIN_LED_GREEN, LOW);
 }
 
-void verify(){
-  unsigned int addr =0;
-  static int size = pageSize;
-  byte b = 0;
-  myFile=SD.open(filename);
-  
-  digitalWrite(PIN_LED_GREEN, HIGH);
-   for (unsigned int a = 0 ; a <= (romSize / 256) ; a ++){
-    
-      currentPage = a ; 
-      GetRomPage(a);
-      
-      for ( int i= 0;i < size;i++){
 
-        myFile.seek(addr); 
-        b = myFile.read();
-     if (pageBuff[i] != b){
-      Serial.print(F("\n!! verify fail !! Page "));
-      Serial.print(a,DEC);
-      Serial.print("-");
-      Serial.print(i,HEX);
-      Serial.print(":");
-      Serial.print(pageBuff[i],HEX);
-      Serial.print("!=");
-      Serial.println(b,HEX);
-        
-      digitalWrite(PIN_LED_GREEN, LOW); 
-      myFile.close();
-      return;
-     }
-     addr ++;
-    }
-  }
-  myFile.close();
-  digitalWrite(PIN_LED_GREEN, LOW); 
-  Serial.print(F("\n!! verify pass !! "));
-}
 
 

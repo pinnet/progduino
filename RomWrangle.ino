@@ -38,7 +38,7 @@ void WriteBufferToEEPROM(int addr, int size)
     digitalWrite(PIN_nWE, LOW); // enable write
     delay(10);
     digitalWrite(PIN_nWE, HIGH); // disable write
-    t.update();
+   // t.update();
   }
   
   digitalWrite(PIN_HEARTBEAT, LOW);
@@ -124,11 +124,8 @@ void GetRomPage(int page){
 void WriteAllRom(){
       for (unsigned int a = 0 ; a <= (romSize / 256) ; a ++){
         currentPage = a ;      
-        if(termMode) term.position(23,0);
-        Serial.print("Page ");
-        Serial.print(a);
-        Serial.print(" of ");
-        Serial.print((romSize / 256));
+        if(termMode) term.position(22,0);
+        printinfo("Writing" ,"Page " + String(a)+" of "+ String(romSize / 256));
         WriteBufferToEEPROM(a * 256, 256);  
       }
 }
