@@ -122,7 +122,10 @@ enum EncoderState{
 enum SanityCheck{
   UNKNOWN,WRITE,ERASE,ZERO
 };
-  
+enum FileType{
+  TXT,ROM,DEV,MD5
+
+}; 
 uint8_t R_headerBackground    = BT_BLACK;
 uint8_t R_headerForeground    = BT_YELLOW;
 uint8_t R_footerBackground    = BT_BLACK;

@@ -232,11 +232,9 @@ void loop()
                     case '>' :
                         nextpage();
                       break;
-                    case ',' :
-                        lastpage();
-                      break;
-                    case '.' :
-                        nextpage();
+                    case ' ' :
+                        currentPage ++;
+                        HelpPage();
                       break;
                     case '@' :
                         setchunksize();

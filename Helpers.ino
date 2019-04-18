@@ -209,7 +209,7 @@ int readline(int readch, char *buffer, int len)
 
     switch (readch) {
 
-      case '$':
+      case '/':
            if (termMode){
               buffer[pos++] = char('l');
               rpos = pos;
@@ -250,7 +250,7 @@ int readline(int readch, char *buffer, int len)
       case '\r': // Return on CR
 
         if (termMode && pos <=0){
-            buffer[pos++] = char('.');
+            buffer[pos++] = char('>');
             rpos = pos;
             pos = 0;// Reset position index ready for next time
             return rpos;
@@ -258,11 +258,22 @@ int readline(int readch, char *buffer, int len)
           rpos = pos;
           pos = 0;// Reset position index ready for next time
           return rpos;
+      case '?': // Return on CR
 
+          if (termMode && pos <=0){
+              buffer[pos++] = char('?');
+              rpos = pos;
+              pos = 0;// Reset position index ready for next time
+              currentPage ++;
+              return rpos;
+          }
+          rpos = pos;
+          pos = 0;// Reset position index ready for next time
+          return rpos;
       case '=': // Return on CR
 
           if (termMode && pos <=0){
-              buffer[pos++] = char('.');
+              buffer[pos++] = char('>');
               rpos = pos;
               pos = 0;// Reset position index ready for next time
               return rpos;
@@ -273,7 +284,7 @@ int readline(int readch, char *buffer, int len)
       case '-': // Return on CR
 
           if (termMode && pos <=0){
-              buffer[pos++] = char(',');
+              buffer[pos++] = char('<');
               rpos = pos;
               pos = 0;// Reset position index ready for next time
               return rpos;
@@ -332,4 +343,30 @@ char serialRead(){
 }
 void serialPrint(String data){
     Serial.print(data);
+    Serial.flush();
+
+}
+void serialPrintln(String data){
+    Serial.println(data);
+    Serial.flush();
+}
+FileType getFileType(String filename){
+
+  if (filename.endsWith(".TXT"))
+  {
+    return TXT;
+  }
+  if (filename.endsWith(".ROM"))
+  {
+    return ROM;
+  }
+  if (filename.endsWith(".DEV"))
+  {
+    return DEV;
+  }
+  if (filename.endsWith(".MD5"))
+  {
+    return MD5;
+  }
+return ROM;
 }

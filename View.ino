@@ -111,13 +111,11 @@ void DisplayCurrentPage(){
 
   if (termMode) term.cls();   
   if (line != ""){
-    if(termMode){
+    
       Serial.println("\t" + pad2center("EEprom Master "+ Version + " (c) Danny Arnold 2017",56,"-"));                      //  header
       Serial.println("\t" + pad2center(line,56," "));
       Serial.println(F("\t-------------------------------------------------------- "));
-    } else {
-      Serial.println(line);
-    }
+    
   }
  //---------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -126,7 +124,7 @@ if (view == VIEW_ROM){
     term.set_color(romPageForeground,romPageBackground);
     blankpage();
   }
-  displaybuff(pageBuff,0,pageSize);
+  displaybuff(pageBuff,0,pageSize,ROM);
 }
 else if (view == VIEW_DIRECTORY){
   if (termMode){
@@ -143,7 +141,7 @@ else if (view == VIEW_FILE){
     term.set_color(filePageForeground,filePageBackground);
      blankpage();
   }
-  displaybuff(pageBuff,0,pageSize);    
+  displaybuff(pageBuff,0,pageSize,getFileType(filename));    
 }
 else if (view == VIEW_INFO){
   if (termMode){
@@ -164,6 +162,12 @@ else if (view == VIEW_BOOT){
     Serial.println("initialization failed!");
     }
     else{
+
+      filename = "Help.txt";
+     
+      displaybuff(pageBuff,0,pageSize,TXT);
+       
+      filename = lastfilename; 
       if (!SD.exists(filename)){
         myFile = SD.open(filename, FILE_WRITE);
         myFile.close();
@@ -204,16 +208,14 @@ else if (view == VIEW_BOOT){
        // return;
   }
   if (line != ""){
-    if(termMode){
+    
       Serial.println(F("\t-------------------------------------------------------- "));                       //   footer
       Serial.println("\t" + pad2center(line,58," "));
       Serial.println(F("\t-------------------------------------------------------- "));
-    }
+    
   } 
 }
 void HelpPage(){
-  
-  
   char buffer[165];
   if (termMode){
     term.set_color(helpPageForeground,helpPageBackground);
@@ -222,45 +224,94 @@ void HelpPage(){
   }
   Serial.print(F("\r\n\tEEprom Master by Danny Arnold (2017) firmware version "));
   Serial.println(Version + "\r\n");
-  Serial.println(F("-------------------------------------------------------------------------------- ")); 
-
-
-  
-  //serialPrint(buf[0]);
-  Serial.print(buf[0],DEC);
-
-
+  Serial.print(F("-------------------------------------------------------------------------------- ")); 
+  lastfilename = filename; 
+  filename = "Help.txt";  
+  displaybuff(pageBuff,0,pageSize,TXT);     
+  filename = lastfilename; 
 }
-static void displaybuff(byte *epm,word address,word datalength)
+static void displaybuff(byte *epm,word address,word datalength,FileType type)
 {
-  char lbuf[82];
-  char *x;
-  int i,j;
-  
-  for (i=0; i < datalength; i+=16) {
-    x=lbuf;
-    sprintf(x,"   %02X%02X: ",currentPage,i);
-    x+=9;
-    for (j=0; j<16; j++) {
-      sprintf(x," %02X",epm[i+j]);
-      x+=3;
+  switch(type){
+    case ROM :
+          dumpHex(epm,address,datalength);  
+      break;
+    case TXT :
+          dumpTxt(epm,address,datalength);
+      break;
+  }
+}
+void dumpHex(byte *epm,word address,word datalength){
+
+    char lbuf[82];
+    char *x;
+    int i,j;
+    
+    for (i=0; i < datalength; i+=16) {
+      x=lbuf;
+      sprintf(x,"   %02X%02X: ",currentPage,i);
+      x+=9;
+      for (j=0; j<16; j++) {
+        sprintf(x," %02X",epm[i+j]);
+        x+=3;
+      }
+      *x=32;
+      x+=1;
+      *x=32;
+      x+=1;
+      for (j=0; j<16; j++) {
+        if (epm[i+j]>=32 && epm[i+j]<127) *x=epm[i+j];
+        else *x=46;
+        x++;
+      }
+      for (int space = 0; space < 5;space++){
+          *x=32;
+          x++;
+      }
+      *x=0;
+      serialPrintln(lbuf);   
     }
-    *x=32;
-    x+=1;
-    *x=32;
-    x+=1;
-    for (j=0; j<16; j++) {
-      if (epm[i+j]>=32 && epm[i+j]<127) *x=epm[i+j];
-      else *x=46;
+}
+void dumpTxt(byte *epm,word address,word datalength){
+    char lbuf[81];
+    char *x;
+    char byt;
+    
+
+  myFile=SD.open(filename);
+
+  for(int l =0 ;l < 80*16;l += 80){
+    x=lbuf;
+    for ( int i= 0;i < 80;i++){
+        myFile.seek(l + i + (currentPage * 80*16)); 
+        byt = myFile.read();
+        switch (byt){
+          case '\t' :
+            *x=' ';
+            *x++=' ';
+            *x++=' ';
+            *x++=' ';
+            
+            break;
+          case '\r' :
+           *x='\b';
+           break;  
+          case '\n' :
+           *x='\b';
+            break;
+          default   :
+            if (byt >=32 && byt <= 127) *x=byt;
+            else *x=byt + 32;
+            break;
+        }
       x++;
     }
-    for (int space = 0; space < 5;space++){
-        *x=32;
-        x++;
-    }
     *x=0;
-    Serial.println(lbuf);   
+    
+    serialPrintln(lbuf);
+    //oledOut("DEBUG",String(sizeof(lbuf)/ sizeof(lbuf[0])));
   }
+  //serialPrintln("");
 }
 void blankpage(){   // why?
 
