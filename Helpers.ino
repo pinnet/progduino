@@ -240,7 +240,7 @@ int readline(int readch, char *buffer, int len)
         
       case '\t': // Return on TAB
         if (termMode){
-          buffer[pos++] = char('#');
+          buffer[pos++] = char('m');
           rpos = pos;
           pos = 0;// Reset position index ready for next time
           return rpos;

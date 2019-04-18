@@ -52,7 +52,7 @@ SdVolume volume;
 File root;
 
 int16_t last, value;
-const String Version = "1.04A"; 
+const String Version = "1.06A"; 
 bool termMode = true;                         // Term Mode on off
 bool sure = false;                            // Sanity Check
 const int chipSelect = 53;                    // SD CE
@@ -174,6 +174,16 @@ void loop()
                       break;
                     case '\r' :
                       break;
+                    case '^' :
+                      //  uploadFile();
+                        break;
+                    case '~' :
+                     //   downloadFile();
+                        break;
+                    case 'h' :
+                        currentPage++;
+                        HelpPage();
+                        break;  
                     case 'i' :
                         view = VIEW_INFO;
                         DisplayCurrentPage();
@@ -232,10 +242,6 @@ void loop()
                     case '>' :
                         nextpage();
                       break;
-                    case ' ' :
-                        currentPage ++;
-                        HelpPage();
-                      break;
                     case '@' :
                         setchunksize();
                       break;
@@ -249,10 +255,11 @@ void loop()
                         FactoryReset();
                       break;
                     case '#' :
-                        swappages();
+                        SettingsPage();
                       break;
                     default :
                       printinfo("Error","Command not recognised"); 
+                      currentPage = 1;
                       HelpPage();
                   }
                   

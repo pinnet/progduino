@@ -70,25 +70,6 @@ const char hex[] = {
   '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
 };
 
-//To save ram NB use of PROGMEM to store long help screen to flash
-
-const char string_0[]  PROGMEM = "Command\t\t\tInput\tExplanation\r\n\r\n"; 
-const char string_1[]  PROGMEM = "Terminal Mode\tt (on/off)\tEnable/Disable Terminal Mode\r\n\t\t\t\toptional choices are on = Enable :\r\n\t\t\t\toff = Disable : (Default) toggle on/off\r\n" ;
-const char string_2[]  PROGMEM = "Set device size\t\ts (XXK)\tSet the size of the device\r\n\t\t\t\toptional choices are 1K : 2K : 4K :\r\n\t\t\t\t8K : 16K : 32K : (Default) 64K \r\n";
-const char string_3[]  PROGMEM = "Page\t\t\tp (XXX)\tSet the current page \r\n\t\t\t\toptional choices are between 0 and the limit set\r\n\t\t\t\tby Rom Size : (Default) display current page.\r\n" ;
-const char string_4[]  PROGMEM = "Directory\t\td (dir)\tSet current directory\r\n\t\t\t\toptional choices are the full path of directory\r\n\t\t\t\tname : (Default) display current directory.\r\n";  
-const char string_5[]  PROGMEM = "Next\t\t\tn\tNext page of device.\r\n" ;
-const char string_6[]  PROGMEM = "Back\t\t\tb\tBack to the previous page of device.\r\n" ;
-const char string_7[]  PROGMEM = "^Reset\t\t\tx\tReset current page and address pointer to zero \r\n\t\t\t\t(address 0000)\r\n" ;
-const char string_8[]  PROGMEM = "Write\t\t\tw\tWrite to device TBC\r\n";
-const char string_9[]  PROGMEM = "Unit\t\t\tu (X)\tSet the \r\n\t\t\t\toptional choices are G = Gigabytes :\r\n\t\t\t\tM = Megabytes : K = Kilobyte : (Default) Bytes\r\n";
-const char string_10[] PROGMEM = "";
-const char string_11[] PROGMEM = "Chunk Size (Bulk Mode)\tc (XXX)\tSet the Chunk Size of the data sent in Bulk Mode\r\n\t\t\t\toptional choices are number of bits :\r\n\t\t\t\t(Default) 16\r\n";
-const char string_12[] PROGMEM = "Everything (Bulk Mode)\te\tOutput data in Chunk Size packets from \r\n\t\t\t\taddress 0000 to the size limit set by Rom Size\r\n";
-const char string_13[] PROGMEM = "Address (Bulk Mode)\ta (XXXX)Set the current address\r\n\t\t\t\toptional choices a four bit hexidecimal number :\r\n\t\t\t\t(Default) 0000\r\n";
-const char string_14[] PROGMEM = "Read (Bulk Mode)\tr\tOutput a Chunk Size of data from current address\r\n" ;
-const char string_15[] PROGMEM = "acK (Bulk Mode)\t\tk\tHandshake for Read, will advance current address\r\n\t\t\t\tpointer by the size of Chunk Size\r\n" ;
-const char* const string_table[] PROGMEM = {string_0, string_1, string_2, string_3, string_4, string_5,string_6, string_7, string_8, string_9, string_10, string_11,string_12, string_13, string_14, string_15};
 
 enum EditorMode {
   MODE_ROM,
@@ -142,3 +123,5 @@ uint8_t filePageBackground  = BT_BLACK;
 uint8_t filePageForeground  = BT_YELLOW;
 uint8_t helpPageBackground  = BT_BLACK;
 uint8_t helpPageForeground  = BT_GREEN;
+uint8_t settingsPageBackground  = BT_BLACK;
+uint8_t settingsPageForeground  = BT_BLUE;

@@ -1,4 +1,4 @@
-/*
+````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````--  +/*
 MIT License
 
 Copyright (c) 2017 Danny Arnold
@@ -178,15 +178,15 @@ else if (view == VIEW_BOOT){
  //------------------------------------------------------------------------------------------------------------------------
   if (view == VIEW_ROM){
       if (termMode) term.set_color(R_footerForeground,R_footerBackground);
-      line = "p (XXX) = page: > = next: < = back: s (XXK) = size";
+      line = "[p (XXX)] = goto page: [>] = next: [<] = back: [h] = help";
   }
   else if (view == VIEW_FILE){
         if (termMode) term.set_color(F_footerForeground,F_footerBackground);
-        line = "p (XXX) = page: > = next: < = back: s (XXK) = size";
+        line = "[p (XXX)] = goto page: [>] = next: [<] = back: [h] = help";
   }
    else if (view == VIEW_DIRECTORY){
         if (termMode) term.set_color(F_footerForeground,F_footerBackground);
-        line = "l = List Dir : Choose 1 - F : l (filename) = Load";
+        line = "[l] = List Dir : Choose [0 - F] : [l (filename)] = Load File";
   }
   else if (view == VIEW_INFO){
        
@@ -224,7 +224,22 @@ void HelpPage(){
   }
   Serial.print(F("\r\n\tEEprom Master by Danny Arnold (2017) firmware version "));
   Serial.println(Version + "\r\n");
-  Serial.print(F("-------------------------------------------------------------------------------- ")); 
+  Serial.print(F("------------------------------------------------------------------------------- ")); 
+  lastfilename = filename; 
+  filename = "Help.txt";  
+  displaybuff(pageBuff,0,pageSize,TXT);     
+  filename = lastfilename; 
+}
+void SettingsPage(){
+  char buffer[165];
+  if (termMode){
+    term.set_color(settingsPageForeground,settingsPageBackground);
+    term.cls();
+    term.position(0,0);
+  }
+  Serial.print(F("\r\n\tEEprom Master by Danny Arnold (2017) firmware version "));
+  Serial.println(Version + "\r\n");
+  Serial.print(F("------------------------------------------------------------------------------- ")); 
   lastfilename = filename; 
   filename = "Help.txt";  
   displaybuff(pageBuff,0,pageSize,TXT);     
