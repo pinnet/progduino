@@ -53,9 +53,10 @@ File root;
 
 int16_t last, value;
 const String Version = "1.04A"; 
-
+char serialIn;
 bool termMode = true;                         // Term Mode on off
-bool sure = false;                            // Sanity Check
+bool sure = false;
+bool dataRDY = false;                         // Sanity Check
 const int chipSelect = 53;                    // SD CE
 byte g_cmd[80];                               // strings received from the controller will go in here
 int dPage = 0;
@@ -76,6 +77,7 @@ String lastfilename = filename;
 String devicetype = "AT27C512";
 String curdir[16];
 static char buf[16];
+static char _buf[16];
 unsigned int arg;
 byte _encsw = 0;
 byte _enca =  0;
@@ -133,8 +135,13 @@ void setup()
 
 void loop()
 {
-  
-  if ( readline(Serial.read(), buf, 16) > 0 ){                                              // Read Serial until input end   ;
+  noInterrupts();
+  if (dataRDY){                                              // Read Serial until input end   ;
+    dataRDY = false;
+    memcpy(buf,_buf,sizeof(buf)*16);
+    memset(_buf,0,16);
+    serialPrint(buf);
+    interrupts();
 
     char key = parsecommand(buf);
     sure = false;
@@ -258,145 +265,6 @@ void loop()
           
           memset(buf,0,16);
     }
-  }
+  } else { interrupts(); }
   sleep();
 }
-int readline(int readch, char *buffer, int len)
-{
-  static int pos = 0;
-  static bool escape = false;
-  static int count = 0;
-  int rpos;
-if (termMode){
-  term.show_cursor(false);
-}
-
-  if (readch > 0) {
-
-    switch (readch) {
-
-      case '$':
-           if (termMode){
-              buffer[pos++] = char('l');
-              rpos = pos;
-              pos = 0;// Reset position index ready for next time
-              return rpos;}
-        break;
-      case '\e':
-           escape= true;
-           buffer[pos] = 0;
-           return;
-        break;
-      case '\f': // forward
-       if (termMode){
-          buffer[pos++] = char('.');
-          rpos = pos;
-          pos = 0;// Reset position index ready for next time
-          return rpos;
-        }
-        break;
-      case '\b': // goback 
-       if (termMode){
-          buffer[pos--] = 0;
-          rpos = pos;
-          pos = 0;// Reset position index ready for next time
-          return rpos;
-        }
-        break;
-        
-      case '\t': // Return on TAB
-        if (termMode){
-          buffer[pos++] = char('#');
-          rpos = pos;
-          pos = 0;// Reset position index ready for next time
-          return rpos;
-        }
-        break; 
-        
-      case '\r': // Return on CR
-
-        if (termMode && pos <=0){
-            buffer[pos++] = char('.');
-            rpos = pos;
-            pos = 0;// Reset position index ready for next time
-            return rpos;
-        }
-          rpos = pos;
-          pos = 0;// Reset position index ready for next time
-          return rpos;
-
-      case '=': // Return on CR
-
-          if (termMode && pos <=0){
-              buffer[pos++] = char('.');
-              rpos = pos;
-              pos = 0;// Reset position index ready for next time
-              return rpos;
-          }
-          rpos = pos;
-          pos = 0;// Reset position index ready for next time
-          return rpos;
-      case '-': // Return on CR
-
-          if (termMode && pos <=0){
-              buffer[pos++] = char(',');
-              rpos = pos;
-              pos = 0;// Reset position index ready for next time
-              return rpos;
-          }
-          rpos = pos;
-          pos = 0;// Reset position index ready for next time
-          return rpos;
-      default:
-     
-         if (pos < len-1) {
-          
-          if (escape){
-            count += 1;
-            if (count > 3){
-              escape = false;
-              count = 0;
-              buffer[pos--] = 0;
-              buffer[pos--] = 0;
-              buffer[pos--] = 0;
-            }
-            
-          }
-          else{
-            //Serial.print(char(readch));
-            buffer[pos++] = readch;
-            buffer[pos] = 0;
-          }
-          
-        }
-    }
-    
-
-    if (termMode) {
-        term.position(22,0);
-        Serial.print('['); 
-        Serial.print(buffer);
-        Serial.print("]                                 "); 
-        term.position(22,0); 
-     } 
-  }
-
-  // No end of line has been found, so return -1.
-  return -1;
-}
-char parsecommand(char* buf){
-
-   char * p_args;                                                           
-        p_args = strtok (buf," \n\r");                                                         // Split args into command array ;
-        for(byte x=0; x < 3; x++){                                                             // loop around remaining input   ;
-          cmd[x]= p_args;
-          p_args = strtok (NULL, " \n\r");                                                     // split next input to command array ;
-        }
-        char key = cmd[0][0];                                                                  // get first char in string ;
-        if (key < 97 && key > 65){                                                             // fix case of char to lower ;
-          key += 32;
-        }   
-
-  return char(key);
-}
-

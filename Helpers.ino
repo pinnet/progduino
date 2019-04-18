@@ -198,3 +198,138 @@ bool areyousure(){
     else{  return false;   }
     }
  }
+int readline(int readch, char *buffer, int len)
+{
+  static int pos = 0;
+  static bool escape = false;
+  static int count = 0;
+  int rpos;
+
+  if (readch > 0) {
+
+    switch (readch) {
+
+      case '$':
+           if (termMode){
+              buffer[pos++] = char('l');
+              rpos = pos;
+              pos = 0;// Reset position index ready for next time
+              return rpos;}
+        break;
+      case '\e':
+           escape= true;
+           buffer[pos] = 0;
+           return;
+        break;
+      case '\f': // forward
+       if (termMode){
+          buffer[pos++] = char('.');
+          rpos = pos;
+          pos = 0;// Reset position index ready for next time
+          return rpos;
+        }
+        break;
+      case '\b': // goback 
+       if (termMode){
+          buffer[pos--] = 0;
+          rpos = pos;
+          pos = 0;// Reset position index ready for next time
+          return rpos;
+        }
+        break;
+        
+      case '\t': // Return on TAB
+        if (termMode){
+          buffer[pos++] = char('#');
+          rpos = pos;
+          pos = 0;// Reset position index ready for next time
+          return rpos;
+        }
+        break; 
+        
+      case '\r': // Return on CR
+
+        if (termMode && pos <=0){
+            buffer[pos++] = char('.');
+            rpos = pos;
+            pos = 0;// Reset position index ready for next time
+            return rpos;
+        }
+          rpos = pos;
+          pos = 0;// Reset position index ready for next time
+          return rpos;
+
+      case '=': // Return on CR
+
+          if (termMode && pos <=0){
+              buffer[pos++] = char('.');
+              rpos = pos;
+              pos = 0;// Reset position index ready for next time
+              return rpos;
+          }
+          rpos = pos;
+          pos = 0;// Reset position index ready for next time
+          return rpos;
+      case '-': // Return on CR
+
+          if (termMode && pos <=0){
+              buffer[pos++] = char(',');
+              rpos = pos;
+              pos = 0;// Reset position index ready for next time
+              return rpos;
+          }
+          rpos = pos;
+          pos = 0;// Reset position index ready for next time
+          return rpos;
+      default:
+     
+         if (pos < len-1) {
+          
+          if (escape){
+            count += 1;
+            if (count > 3){
+              escape = false;
+              count = 0;
+              buffer[pos--] = 0;
+              buffer[pos--] = 0;
+              buffer[pos--] = 0;
+            }
+            
+          }
+          else{
+            //Serial.print(char(readch));
+            buffer[pos++] = readch;
+            buffer[pos] = 0;
+          }
+          
+        }
+    }
+  }
+
+  // No end of line has been found, so return -1.
+  return NULL;
+}
+char parsecommand(char* buf){
+
+   char * p_args;                                                           
+        p_args = strtok (buf," \n\r");                                                         // Split args into command array ;
+        for(byte x=0; x < 3; x++){                                                             // loop around remaining input   ;
+          cmd[x]= p_args;
+          p_args = strtok (NULL, " \n\r");                                                     // split next input to command array ;
+        }
+        char key = cmd[0][0];                                                                  // get first char in string ;
+        if (key < 97 && key > 65){                                                             // fix case of char to lower ;
+          key += 32;
+        }   
+
+  return char(key);
+}
+char serialRead(){
+  
+    if(Serial.available() > 0){ 
+    char in = Serial.read();
+    return in;} else {return NULL;}
+}
+void serialPrint(String data){
+    Serial.print(data);
+}

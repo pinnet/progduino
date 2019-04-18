@@ -36,4 +36,9 @@ void timerint(){
 
     count ++;
 
+    serialIn = serialRead();
+    if (serialIn != NULL){
+        if (readline(serialIn,_buf,16) != NULL ) dataRDY = true;     
+    }
+    
 }

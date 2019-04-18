@@ -20,7 +20,13 @@ if ((key >= '0' && key <= '9') || (key >= 'a' && key <= 'f')){                  
             hex[0] = '0';
             hex[1] = key;
             int filenum = strtol(hex, NULL, 16);
-            Serial.println(curdir[filenum]);
+            void serialPrint(){
+
+
+
+
+
+}ln(curdir[filenum]);
         }
   } else if (key == 'g'){                                                                     // g 
         unsigned int arg = hexUint(cmd[1]);      
@@ -127,7 +133,13 @@ if ((key >= '0' && key <= '9') || (key >= 'a' && key <= 'f')){                  
 
       if (currentMode == MODE_ROM){
           
-          Serial.print("\r\nOutput to " + filename +". Saving.");
+          void serialPrint(){
+
+
+
+
+
+}("\r\nOutput to " + filename +". Saving.");
 
         if(cmd[1] != 0){ filename = cmd[1];}                               // todo. find a more robust filter 
 
@@ -139,9 +151,27 @@ if ((key >= '0' && key <= '9') || (key >= 'a' && key <= 'f')){                  
           currentPage = a ;
           GetRomPage(a);
           if(termMode) term.position(22,0);
-          Serial.print("Writing page ");
-          Serial.print(a);
-          Serial.println(" to "+ filename);
+          void serialPrint(){
+
+
+
+
+
+}("Writing page ");
+          void serialPrint(){
+
+
+
+
+
+}(a);
+          void serialPrint(){
+
+
+
+
+
+}ln(" to "+ filename);
           
           for (unsigned int ptr = 0; ptr < 256; ptr = ptr + fileChunk){
             
@@ -164,9 +194,27 @@ if ((key >= '0' && key <= '9') || (key >= 'a' && key <= 'f')){                  
                   currentPage = a ;
                   GetPage();
                   if(termMode) term.position(22,0);
-                  Serial.print("Writing page ");
-                  Serial.print(a + offset);
-                  Serial.println(" to device");
+                  void serialPrint(){
+
+
+
+
+
+}("Writing page ");
+                  void serialPrint(){
+
+
+
+
+
+}(a + offset);
+                  void serialPrint(){
+
+
+
+
+
+}ln(" to device");
                   WriteBufferToEEPROM((a + offset)* 256, 256);  
                 }
       }
@@ -203,7 +251,13 @@ if ((key >= '0' && key <= '9') || (key >= 'a' && key <= 'f')){                  
       else if (key == 'z'){                                                               // z  zero 
         FormatPage(0);
         if(termMode) term.position(22,0);
-        Serial.print("Zeroing device ");
+        void serialPrint(){
+
+
+
+
+
+}("Zeroing device ");
         WriteAllRom();
             
       } 
@@ -275,10 +329,22 @@ if ((key >= '0' && key <= '9') || (key >= 'a' && key <= 'f')){                  
       }
       else {                                                                                    // default
         if(termMode) DisplayCurrentPage();
-        Serial.println(F("Command not recognised.\r\n")); 
+        void serialPrint(){
+
+
+
+
+
+}ln(F("Command not recognised.\r\n")); 
         HelpPage(); 
       }
-    if (!termMode) Serial.print("OK>_");
+    if (!termMode) void serialPrint(){
+
+
+
+
+
+}("OK>_");
     }    EncoderState checkEncoder(){
 
     byte encsw = digitalRead(ENCSW);
@@ -313,4 +379,63 @@ if (encstate == A){
   
 }
 
+}arg = hexUint(cmd[1]);      
+                currentPage = (arg & 0xFF00) >> 8;
+                if((currentPage * 256) >= romSize){ currentPage = 0;}
+                curpos = (arg & 0x00FF);
+                if(termMode) DisplayCurrentPage(); 
+                SDStatus MountSD(){
+  
+    int err = card.init(SPI_HALF_SPEED, chipSelect+5);
+    if(err == 0){
+      printinfo("DEBUG","Mounted");
+       delay(3000);
+      return  SDS_MOUNTED;
+    }
+    else{
+      printinfo("DEBUG","unmounted "+ String(err));
+       delay(3000);
+      return  SDS_UNMOUNTED;
+    }
+  
 }
+
+String volSize(byte unit){
+  
+  if(!volume.init(card)){
+    cardStatus = SDS_VOLERROR;
+    return "No Volume";
+  }
+  uint32_t volumesize = volume.blocksPerCluster();// clusters are collections of blocks
+  uint32_t freespace = volume.blocksPerCluster();
+  volumesize *= volume.clusterCount();       // we'll have a lot of clusters
+  volumesize *= 512;  // SD card blocks are always 512 bytes 
+  
+  
+  if( unit == char('G')) {
+    volumesize /= 1024;
+    volumesize /= 1024;
+    volumesize /= 1024;
+    freespace /= 1024;
+    freespace /= 1024;
+    freespace /= 1024;
+    return String(volumesize) + " GB";
+    }
+  else if( unit == char('M')) {
+    volumesize /= 1024;
+    volumesize /= 1024;
+    return String(volumesize) + " MB";
+    }
+   else if (unit ==  char('K')){
+    volumesize /= 1024;
+    return String(volumesize) + " KB";
+    }
+    else {
+    return String(volumesize) + " bytes";
+    }  
+}
+enum SDStatus{
+  SDS_MOUNTED,
+  SDS_UNMOUNTED,
+  SDS_VOLERROR
+};
