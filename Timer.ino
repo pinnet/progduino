@@ -35,10 +35,10 @@ void sleep(){
 void timerint(){
 
     count ++;
-
-    serialIn = serialRead();
-    if (serialIn != NULL){
-        if (readline(serialIn,_buf,16) != NULL ) dataRDY = true;     
+ if(!bufferLock){
+    if (Serial.available() > 0){
+            lineRdy = (readline(Serial.read(),buf,16) >=1) ? true : false;     
     }
-    
+ }
+
 }

@@ -53,14 +53,13 @@ File root;
 
 int16_t last, value;
 const String Version = "1.04A"; 
-char serialIn;
 bool termMode = true;                         // Term Mode on off
-bool sure = false;
-bool dataRDY = false;                         // Sanity Check
+bool sure = false;                            // Sanity Check
 const int chipSelect = 53;                    // SD CE
 byte g_cmd[80];                               // strings received from the controller will go in here
 int dPage = 0;
-
+bool bufferLock = false;
+bool lineRdy = true;
 static const int pageSize = 256;              // Size of Page
 unsigned long  BAUD_RATE = 115200;            // Terminal Speed
 static byte pageBuff[pageSize];               // Buffer for a page
@@ -135,136 +134,135 @@ void setup()
 
 void loop()
 {
-  noInterrupts();
-  if (dataRDY){                                              // Read Serial until input end   ;
-    dataRDY = false;
-    memcpy(buf,_buf,sizeof(buf)*16);
-    memset(_buf,0,16);
-    serialPrint(buf);
-    interrupts();
+    bufferLock = true;
+    
+    if(!buf[0] == 0){
 
-    char key = parsecommand(buf);
-    sure = false;
-    if ((key >= '0' && key <= '9') || (key >= 'a' && key <= 'f')){                          // 0-9 a-f for shortcut
         
-        if (key == 'f'){                                                                    // f   Next list
-            dPage++;
-            DisplayCurrentPage();
-        } else  if (key == '0'){                                                            // 0   Previous list 
-            dPage--;
-            if (dPage < 0) dPage = 0;
-            DisplayCurrentPage();
-        } else if (view == VIEW_DIRECTORY){
-            char hex[2];
-            hex[0] = '0';
-            hex[1] = key;
-            int filenum = strtol(hex, NULL, 16);
-            filename = curdir[filenum];
-            view = VIEW_FILE;
-            DisplayCurrentPage();
-        } else if (view == VIEW_INFO){
-            char hex[2];
-            hex[0] = '0';
-            hex[1] = key;
-            int filenum = strtol(hex, NULL, 16);
-            Serial.println(curdir[filenum]);
+        if(lineRdy){
+            
+            char key = parsecommand(buf);
+            sure = false;
+            if ((key >= '0' && key <= '9') || (key >= 'a' && key <= 'f')){                          // 0-9 a-f for shortcut
+                
+                if (key == 'f'){                                                                    // f   Next list
+                    dPage++;
+                    DisplayCurrentPage();
+                } else  if (key == '0'){                                                            // 0   Previous list 
+                    dPage--;
+                    if (dPage < 0) dPage = 0;
+                    DisplayCurrentPage();
+                } else if (view == VIEW_DIRECTORY){
+                    char hex[2];
+                    hex[0] = '0';
+                    hex[1] = key;
+                    int filenum = strtol(hex, NULL, 16);
+                    filename = curdir[filenum];
+                    view = VIEW_FILE;
+                    DisplayCurrentPage();
+                } else if (view == VIEW_INFO){
+                    char hex[2];
+                    hex[0] = '0';
+                    hex[1] = key;
+                    int filenum = strtol(hex, NULL, 16);
+                    Serial.println(curdir[filenum]);
+                }
+                memset(buf,0,16);
+          } else {
+                  switch (key){
+                    case '\n' :
+                      break;
+                    case '\r' :
+                      break;
+                    case 'i' :
+                        view = VIEW_INFO;
+                        DisplayCurrentPage();
+                      break;
+                    case 'k' :
+                        curpos += chunkSize;
+                      break;
+                    case 'l' :
+                        loadfile();
+                      break;
+                    case 'm' :
+                        changeMode();
+                      break;
+                    case 'n' :
+                        filename = lastfilename;
+                        DisplayCurrentPage();
+                      break;
+                    case 'p' :
+                        setpage();
+                      break;
+                    case 'q' :
+                      break;
+                    case 'r' :
+                        setdevice();   
+                      break;
+                    case 's' :
+                        setsize();
+                      break;
+                    case 't' :
+                        terminalmode();         
+                      break;
+                    case 'u' :
+                        setunit();
+                      break;
+                    case 'v' :
+                        verify();  
+                      break;
+                    case 'w' :
+                        write();
+                      break;
+                    case 'x' :
+                        erase();
+                      break;
+                    case 'y' :
+                        sanitycheck();
+                      break;
+                    case 'z' :
+                        zero();
+                      break;
+                    case '!' :
+                        resetpage();
+                      break;
+                    case '<' :
+                        lastpage();
+                      break;
+                    case '>' :
+                        nextpage();
+                      break;
+                    case ',' :
+                        lastpage();
+                      break;
+                    case '.' :
+                        nextpage();
+                      break;
+                    case '@' :
+                        setchunksize();
+                      break;
+                    case '?' :
+                        HelpPage();
+                      break;
+                    case '+' :
+                        cont();
+                      break;
+                    case '%' :
+                        FactoryReset();
+                      break;
+                    case '#' :
+                        swappages();
+                      break;
+                    default :
+                      printinfo("Error","Command not recognised"); 
+                      HelpPage();
+                  }
+                  
+                  memset(buf,0,16);
+                
+            }
         }
-        memset(buf,0,16);
-  } else {
-          switch (key){
-            case 'g' :
-                arg = hexUint(cmd[1]);      
-                currentPage = (arg & 0xFF00) >> 8;
-                if((currentPage * 256) >= romSize){ currentPage = 0;}
-                curpos = (arg & 0x00FF);
-                if(termMode) DisplayCurrentPage(); 
-              break;
-            case 'i' :
-                view = VIEW_INFO;
-                DisplayCurrentPage();
-              break;
-            case 'k' :
-                curpos += chunkSize;
-              break;
-            case 'l' :
-                loadfile();
-              break;
-            case 'm' :
-                changeMode();
-              break;
-            case 'n' :
-                filename = lastfilename;
-                DisplayCurrentPage();
-              break;
-            case 'p' :
-                setpage();
-              break;
-            case 'q' :
-              break;
-            case 'r' :
-                setdevice();   
-              break;
-            case 's' :
-                setsize();
-              break;
-            case 't' :
-                terminalmode();         
-              break;
-            case 'u' :
-                setunit();
-              break;
-            case 'v' :
-                verify();  
-              break;
-            case 'w' :
-                write();
-              break;
-            case 'x' :
-                erase();
-              break;
-            case 'y' :
-               sanitycheck();
-              break;
-            case 'z' :
-                zero();
-              break;
-            case '!' :
-                resetpage();
-              break;
-            case '<' :
-                lastpage();
-              break;
-            case '>' :
-                nextpage();
-              break;
-            case ',' :
-                lastpage();
-              break;
-            case '.' :
-                nextpage();
-              break;
-            case '@' :
-                setchunksize();
-              break;
-            case '?' :
-                HelpPage();
-              break;
-            case '+' :
-                cont();
-              break;
-            case '%' :
-                FactoryReset();
-              break;
-            case '#' :
-                swappages();
-              break;
-            default :
-              printinfo("Error","Command not recognised"); 
-              HelpPage(); 
-          }
-          
-          memset(buf,0,16);
     }
-  } else { interrupts(); }
-  sleep();
+    bufferLock = false;
+    sleep();
 }

@@ -297,7 +297,7 @@ int readline(int readch, char *buffer, int len)
             
           }
           else{
-            //Serial.print(char(readch));
+            serialPrint(String(char(readch)));
             buffer[pos++] = readch;
             buffer[pos] = 0;
           }
@@ -307,7 +307,7 @@ int readline(int readch, char *buffer, int len)
   }
 
   // No end of line has been found, so return -1.
-  return NULL;
+  return -1;
 }
 char parsecommand(char* buf){
 

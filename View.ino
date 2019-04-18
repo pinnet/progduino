@@ -220,17 +220,16 @@ void HelpPage(){
     term.cls();
     term.position(0,0);
   }
-  Serial.print(F("\r\n\tRom Master by Danny Arnold (2017) firmware version "));
+  Serial.print(F("\r\n\tEEprom Master by Danny Arnold (2017) firmware version "));
   Serial.println(Version + "\r\n");
   Serial.println(F("-------------------------------------------------------------------------------- ")); 
-  /*
-  for (int i = 0; i < 7; i++){
-    strcpy_P(buffer, (char*)pgm_read_word(&(string_table[i]))); 
-    Serial.print(buffer);           
-  }
-  Serial.println(F("Help\t\t\t?\tThis help page\r\n"));
+
+
   
-  */
+  //serialPrint(buf[0]);
+  Serial.print(buf[0],DEC);
+
+
 }
 static void displaybuff(byte *epm,word address,word datalength)
 {
