@@ -61,9 +61,8 @@ SOFTWARE.
 #define ENCA    7
 #define ENCB    6
 
-#define PIN_HEARTBEAT 4
-#define PIN_LED_RED 5
-#define PIN_LED_GREEN 4
+#define LED_PIN 4
+#define LED_SER 5
 
 const char hex[] = {
   '0', '1', '2', '3', '4', '5', '6', '7',
@@ -93,18 +92,14 @@ enum DirMode{
   LIST,
   INFO
   };
-enum EncoderState{
-  FORWARD,
-  BACKWARD,
-  SELECTED,
-  A,
-  B
+enum EncoderStateChange{
+  SELECTED,A,B
   };
 enum SanityCheck{
   UNKNOWN,WRITE,ERASE,ZERO
 };
 enum FileType{
-  TXT,ROM,DEV,MD5
+  TXT,ROM,DEV,MD5,INI
 
 }; 
 uint8_t R_headerBackground    = BT_BLACK;

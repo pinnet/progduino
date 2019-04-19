@@ -26,8 +26,6 @@ void sleep(){
 
     if(count <= TIMEOUT) return;
     count = 0;
-    pixels.clear();
-    pixels.show();
     display.clearDisplay();
     display.display();
 }
@@ -35,9 +33,18 @@ void sleep(){
 void timerint(){
 
     count ++;
- if(!bufferLock){
-    if (Serial.available() > 0){
+    if(!bufferLock){
+        if (Serial.available() > 0){
             lineRdy = (readline(Serial.read(),buf,16) >=1) ? true : false;     
+            switch(checkEncoder())
+            {
+                case A :
+                    break;
+                case B :
+                    break;
+                case SWITCH :
+                    break;
+            }
     }
  }
 

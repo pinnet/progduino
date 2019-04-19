@@ -219,6 +219,9 @@ void erase(){
       
   }
 }
+
+
+
 void write(){
 
   if(cmd[1]){ filename = cmd[1];} 

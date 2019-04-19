@@ -41,15 +41,12 @@ void WriteBufferToEEPROM(int addr, int size)
    // t.update();
   }
   
-  digitalWrite(PIN_HEARTBEAT, LOW);
-  digitalWrite(PIN_LED_RED, LOW);
  
 }
 
 void ReadIntoBuffer(unsigned int addr, int size)
 {
   byte b=0;
-  digitalWrite(PIN_LED_GREEN, HIGH);
   
   int x;
   for (x = 0; x < size; ++x)
@@ -61,7 +58,6 @@ void ReadIntoBuffer(unsigned int addr, int size)
     pageBuff[x] = b;
   }
   
-  digitalWrite(PIN_LED_GREEN, LOW);
 }
 
 

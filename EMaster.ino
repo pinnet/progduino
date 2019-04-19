@@ -40,15 +40,17 @@ SOFTWARE.
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 #define OLED_RESET     -1
-#define PIN 5
 #define NUMPIXELS 1
 #define TIMEOUT 6000
 
-Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+// todo: ADAFRUIT need to remove dependancy
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// todo: atribute author in documentation and show licence
 BasicTerm term(&Serial);
-Sd2Card card;
-SdVolume volume;
+
+//Sd2Card card;
+//SdVolume volume;
 File root;
 
 int16_t last, value;
@@ -60,6 +62,12 @@ byte g_cmd[80];                               // strings received from the contr
 int dPage = 0;
 bool bufferLock = false;
 bool lineRdy = true;
+bool banners = true;
+
+bool previousEncSW = false;
+bool previousEncA = false;
+bool previousEncB = false;
+
 static const int pageSize = 256;              // Size of Page
 unsigned long  BAUD_RATE = 115200;            // Terminal Speed
 static byte pageBuff[pageSize];               // Buffer for a page
@@ -82,7 +90,7 @@ byte _encsw = 0;
 byte _enca =  0;
 byte _encb =  0;
 unsigned int count = 0;
-
+char defaultAction = '?';
 SDStatus cardStatus  = SDS_UNMOUNTED;
 EditorMode currentMode = MODE_BOOT; 
 ViewMode view = VIEW_BOOT;
@@ -98,18 +106,14 @@ void setup()
     Timer3.initialize(10000);
     Timer3.attachInterrupt(timerint);
 
-    pixels.begin(); 
-    pixels.clear();
-    pixels.show();
     display.setRotation(2);
     display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
     display.clearDisplay();
     display.display();
-   
-    term.init();
+  
     SetHardwarePins(); 
     SetDataLinesAsInputs();
-                                                                                                    // Load values from device ;
+   
     siunit =    EEPROM.read(PSLOC_SIUNIT);
     chunkSize = EEPROM.read(PSLOC_CHUNKSIZE);
     romSize =   EEPROM.read(PSLOC_ROMSIZE) << 8;
@@ -117,13 +121,9 @@ void setup()
 
     Serial.begin(BAUD_RATE);
     memset(buf,0,16); 
-    memset(pageBuff,0,pageSize);                                                                            // Clear Page Buffer ;
-  
-    //t.oscillate(PIN_LED_RED,100,LOW);
-  
+    memset(pageBuff,0,pageSize);                                                                           
+    
     SetAddress(0);
-    Serial.println( (MountSD() == SDS_MOUNTED)? "Mounted":"Unmounted");
-    cardStatus = MountSD();
     DisplayCurrentPage();
   
 }
@@ -171,8 +171,7 @@ void loop()
           } else {
                   switch (key){
                     case '\n' :
-                      break;
-                    case '\r' :
+                    case '\r' :         
                       break;
                     case '^' :
                       //  uploadFile();
@@ -180,11 +179,14 @@ void loop()
                     case '~' :
                      //   downloadFile();
                         break;
+                    case '?' :
                     case 'h' :
+                        defaultAction = '?';
                         currentPage++;
                         HelpPage();
                         break;  
                     case 'i' :
+                        defaultAction = '>';
                         view = VIEW_INFO;
                         DisplayCurrentPage();
                       break;
@@ -192,12 +194,15 @@ void loop()
                         curpos += chunkSize;
                       break;
                     case 'l' :
+                        defaultAction = '>';
                         loadfile();
                       break;
-                    case 'm' :
+                    case 'm' : 
+                        defaultAction = '>';
                         changeMode();
                       break;
                     case 'n' :
+                        defaultAction = 'p';
                         filename = lastfilename;
                         DisplayCurrentPage();
                       break;
@@ -222,15 +227,18 @@ void loop()
                         verify();  
                       break;
                     case 'w' :
+                        defaultAction = 'n';
                         write();
                       break;
                     case 'x' :
+                        defaultAction = 'n';
                         erase();
                       break;
                     case 'y' :
                         sanitycheck();
                       break;
                     case 'z' :
+                        defaultAction = 'n';
                         zero();
                       break;
                     case '!' :
@@ -245,9 +253,6 @@ void loop()
                     case '@' :
                         setchunksize();
                       break;
-                    case '?' :
-                        HelpPage();
-                      break;
                     case '+' :
                         cont();
                       break;
@@ -255,12 +260,16 @@ void loop()
                         FactoryReset();
                       break;
                     case '#' :
+                        defaultAction = 'n';
                         SettingsPage();
                       break;
                     default :
-                      printinfo("Error","Command not recognised"); 
-                      currentPage = 1;
-                      HelpPage();
+                      if(termMode){
+                        term.set_color(1,0);
+                        serialPrintln("");
+                        printinfo("Error","unrecognised command");
+                        serialPrintln("  ? - for Help");
+                      }
                   }
                   
                   memset(buf,0,16);

@@ -26,9 +26,6 @@ SOFTWARE.
 
 void SetHardwarePins(){ 
 
-  //pinMode(chipSelect,  OUTPUT);
-  //digitalWrite(chipSelect, HIGH );
-
   pinMode(ENCSW,  INPUT_PULLUP); 
   pinMode(ENCA,   INPUT_PULLUP);
   pinMode(ENCB,   INPUT_PULLUP);
@@ -50,14 +47,8 @@ void SetHardwarePins(){
   pinMode(PIN_nCE, OUTPUT); digitalWrite(PIN_nCE, LOW); 
   pinMode(PIN_nOE, OUTPUT); digitalWrite(PIN_nOE, HIGH);
   pinMode(PIN_nWE, OUTPUT); digitalWrite(PIN_nWE, HIGH);
-  pinMode(PIN_HEARTBEAT, OUTPUT);
-  digitalWrite(PIN_HEARTBEAT, HIGH);
-  
-  pinMode(PIN_LED_RED, OUTPUT);
-  digitalWrite(PIN_LED_RED, LOW);
-  
-  pinMode(PIN_LED_GREEN, OUTPUT);
-  digitalWrite(PIN_LED_GREEN, LOW);
+  pinMode(LED_PIN, OUTPUT); digitalWrite(LED_PIN,HIGH);
+  pinMode(LED_SER, OUTPUT); digitalWrite(LED_SER,HIGH);
 
   }
   void SetDataLinesAsInputs()
@@ -217,9 +208,11 @@ int readline(int readch, char *buffer, int len)
               return rpos;}
         break;
       case '\e':
-           escape= true;
-           buffer[pos] = 0;
-           return;
+              defaultAction = 'p';
+              buffer[pos++] = char('p');
+              rpos = pos;
+              pos = 0;// Reset position index ready for next time
+              return rpos;
         break;
       case '\f': // forward
        if (termMode){
@@ -250,7 +243,7 @@ int readline(int readch, char *buffer, int len)
       case '\r': // Return on CR
 
         if (termMode && pos <=0){
-            buffer[pos++] = char('>');
+            buffer[pos++] = char(defaultAction);
             rpos = pos;
             pos = 0;// Reset position index ready for next time
             return rpos;
@@ -264,7 +257,6 @@ int readline(int readch, char *buffer, int len)
               buffer[pos++] = char('?');
               rpos = pos;
               pos = 0;// Reset position index ready for next time
-              currentPage ++;
               return rpos;
           }
           rpos = pos;
@@ -294,31 +286,21 @@ int readline(int readch, char *buffer, int len)
           return rpos;
       default:
      
-         if (pos < len-1) {
-          
-          if (escape){
-            count += 1;
-            if (count > 3){
-              escape = false;
-              count = 0;
-              buffer[pos--] = 0;
-              buffer[pos--] = 0;
-              buffer[pos--] = 0;
+         
+
+            if(termMode){
+              serialPrint(String(char(readch)));
             }
-            
-          }
-          else{
-            serialPrint(String(char(readch)));
             buffer[pos++] = readch;
             buffer[pos] = 0;
-          }
+         
           
-        }
+        
     }
   }
 
   // No end of line has been found, so return -1.
-  return -1;
+  return NULL;
 }
 char parsecommand(char* buf){
 
@@ -352,21 +334,27 @@ void serialPrintln(String data){
 }
 FileType getFileType(String filename){
 
-  if (filename.endsWith(".TXT"))
+  String upper = filename;
+  upper.toUpperCase();
+  if (upper.endsWith(".TXT"))
   {
     return TXT;
   }
-  if (filename.endsWith(".ROM"))
+  if (upper.endsWith(".ROM"))
   {
     return ROM;
   }
-  if (filename.endsWith(".DEV"))
+  if (upper.endsWith(".DEV"))
   {
     return DEV;
   }
-  if (filename.endsWith(".MD5"))
+  if (upper.endsWith(".MD5"))
   {
     return MD5;
+  }
+  if (upper.endsWith(".INI"))
+  {
+    return INI;
   }
 return ROM;
 }

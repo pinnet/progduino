@@ -1,15 +1,45 @@
-Command\t\t\tInput\tExplanation\r\n\r\n 
-Terminal Mode\tt (on/off)\tEnable/Disable Terminal Mode\r\n\t\t\t\toptional choices are on = Enable :\r\n\t\t\t\toff = Disable : (Default) toggle on/off\r\n 
-Set device size\t\ts (XXK)\tSet the size of the device\r\n\t\t\t\toptional choices are 1K : 2K : 4K :\r\n\t\t\t\t8K : 16K : 32K : (Default) 64K \r\n
-Page\t\t\tp (XXX)\tSet the current page \r\n\t\t\t\toptional choices are between 0 and the limit set\r\n\t\t\t\tby Rom Size : (Default) display current page.\r\n 
-Directory\t\td (dir)\tSet current directory\r\n\t\t\t\toptional choices are the full path of directory\r\n\t\t\t\tname : (Default) display current directory.\r\n  
-Next\t\t\tn\tNext page of device.\r\n 
-Back\t\t\tb\tBack to the previous page of device.\r\n 
-^Reset\t\t\tx\tReset current page and address pointer to zero \r\n\t\t\t\t(address 0000)\r\n 
-Write\t\t\tw\tWrite to device TBC\r\n
-Unit\t\t\tu (X)\tSet the \r\n\t\t\t\toptional choices are G = Gigabytes :\r\n\t\t\t\tM = Megabytes : K = Kilobyte : (Default) Bytes\r\n
-Chunk Size (Bulk Mode)\tc (XXX)\tSet the Chunk Size of the data sent in Bulk Mode\r\n\t\t\t\toptional choices are number of bits :\r\n\t\t\t\t(Default) 16\r\n
-Everything (Bulk Mode)\te\tOutput data in Chunk Size packets from \r\n\t\t\t\taddress 0000 to the size limit set by Rom Size\r\n
-Address (Bulk Mode)\ta (XXXX)Set the current address\r\n\t\t\t\toptional choices a four bit hexidecimal number :\r\n\t\t\t\t(Default) 0000\r\n
-Read (Bulk Mode)\tr\tOutput a Chunk Size of data from current address\r\n 
-acK (Bulk Mode)\t\tk\tHandshake for Read, will advance current address\r\n\t\t\t\tpointer by the size of Chunk Size\r\n 
+--------------  _______ _______ _______ ______   _______ __   __ --------------
+|              |       |       |       |    _ | |       |  |_|  |             |
+|              |    ___|    ___|    _  |   | || |   _   |       |             |
+|              |   |___|   |___|   |_| |   |_||_|  | |  |       |             |
+|              |    ___|    ___|    ___|    __  |  |_|  |       |             |
+|              |   |___|   |___|   |   |   |  | |       | ||_|| |             |
+|              |_______|_______|___|   |___|  |_|_______|_|   |_|             |
+|               __   __ _______ _______ _______ _______ ______                |
+|              |  |_|  |   _   |       |       |       |    _ |               |
+|              |       |  |_|  |  _____|_     _|    ___|   | ||               |
+|              |       |       | |_____  |   | |   |___|   |_||_              |
+|              |       |       |_____  | |   | |    ___|    __  |             |
+|              | ||_|| |   _   |_____| | |   | |   |___|   |  | |             |
+|              |_|   |_|__| |__|_______| |___| |_______|___|  |_|             |
+|                            (C) Danny Arnold 2017                            |
+-------------------------------------------------------------------------------
+<Mode>   Command           Explanation                      Options            
+  -        h|?             This Help Page                   [h|?] next page    
+  -         t              Toggle Terminal Mode             t <on/off>         
+  -         >              Forward Page                     [+] shortcut       
+  -         <              Backward Page                    [-] shortcut       
+  -         p              Display Current Page             p <page number>    
+  -         i              Choose Device                    i [0-F] shortcut   
+  -         m              Swap Mode <File/Device>          [TAB] shortcut     
+  -         #              Settings Page                    # [00-99] [value]  
+ FILE       w              Write current file to device     w <offset>         
+ FILE       w <filename>   Wite <filename> to device        n/a                
+ FILE       l              List directory                   [/] shortcut       
+ FILE       l <filename>   Load file                        l [0-F] shortcut   
+ FILE       x              Erase current file               n/a                
+ FILE       x <filenmae>   Erase filename                   n/a                
+----------------------------[Page 1]---------------------------[h|?] next page 
+<Mode>   Command           Explanation                      Options            
+DEVICE      w              Write Device to current file     n/a                
+DEVICE      w <filename>   Write Device to <filename>       n/a                
+DEVICE      x              Erase Device                     n/a                
+DEVICE      z              Zero Device                      n/a                
+                                                                               
+ BULK*      @ <chunkSize>  Set Bulkmode chunk size          n/a                
+ BULK*      ~ <filename>   Download File                    n/a                
+ BULK*      + <checksum>   Ack Bulk Transfer                n/a                
+ BULK*      ^ <filename>   Upload File                      n/a                
+                                                                               
+*BULK MODE is only availible when not in terminal mode                         
+

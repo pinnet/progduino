@@ -22,52 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-SDStatus MountSD(){
-  
-    if(card.init(SPI_HALF_SPEED, chipSelect)){
-      return  SDS_MOUNTED;
-    }
-    else{
-      return  SDS_UNMOUNTED;
-    }
-}
-
-
-String volSize(byte unit){
-  
-  if(!volume.init(card)){
-    cardStatus = SDS_VOLERROR;
-    return "No Volume";
-  }
-  uint32_t volumesize = volume.blocksPerCluster();// clusters are collections of blocks
-  uint32_t freespace = volume.blocksPerCluster();
-  volumesize *= volume.clusterCount();       // we'll have a lot of clusters
-  volumesize *= 512;  // SD card blocks are always 512 bytes 
-  
-  
-  if( unit == char('G')) {
-    volumesize /= 1024;
-    volumesize /= 1024;
-    volumesize /= 1024;
-    freespace /= 1024;
-    freespace /= 1024;
-    freespace /= 1024;
-    return String(volumesize) + " GB";
-    }
-  else if( unit == char('M')) {
-    volumesize /= 1024;
-    volumesize /= 1024;
-    return String(volumesize) + " MB";
-    }
-   else if (unit ==  char('K')){
-    volumesize /= 1024;
-    return String(volumesize) + " KB";
-    }
-    else {
-    return String(volumesize) + " bytes";
-    }  
-}
-
 void SaveBuffer(unsigned long adr, unsigned int size,File myFile){
  char b = 0;
  if (myFile) {
@@ -192,9 +146,8 @@ void GetFilePage(int page){
 }
 void ReadFileIntoBuffer(unsigned long addr, int size)
 {
-  digitalWrite(PIN_LED_GREEN, HIGH);
+
   byte b;
-  //char out2; 
  
   myFile=SD.open(filename);
   
@@ -203,23 +156,11 @@ void ReadFileIntoBuffer(unsigned long addr, int size)
  myFile.seek(addr); 
  b = myFile.read();
    pageBuff[i] = b;
-   // out2 = myFile.read();
-
-    // if(out1 == '\r'){
-    //   out1 = myFile.read();
-    //   out2 = myFile.read();
-    //   addr += 2;
-     // }
-    // char b[2];    
-    // b[0]=out1;
-    // b[1]=out2;
-    
-     //pageBuff[i] = strtoul(out1,NULL,16) ;
      addr += 1;
   }
 
   myFile.close();
-  digitalWrite(PIN_LED_GREEN, LOW);
+
 }
 
 

@@ -1,4 +1,5 @@
-````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````````--  +/*
+/*
+
 MIT License
 
 Copyright (c) 2017 Danny Arnold
@@ -111,25 +112,24 @@ void DisplayCurrentPage(){
 
   if (termMode) term.cls();   
   if (line != ""){
-    
-      Serial.println("\t" + pad2center("EEprom Master "+ Version + " (c) Danny Arnold 2017",56,"-"));                      //  header
-      Serial.println("\t" + pad2center(line,56," "));
-      Serial.println(F("\t-------------------------------------------------------- "));
-    
+      if(banners){
+      Serial.println("\t  " + pad2center(" EEprom Master "+ Version + " (c) Danny Arnold 2017 ",60,"-"));                      //  header
+      Serial.println("\t  " + pad2center(line,56," "));
+      Serial.println(F("\t  ----------------------------------------------------------- "));
+      }
   }
  //---------------------------------------------------------------------------------------------------------------------------------------------------------
 
 if (view == VIEW_ROM){
   if (termMode) {
     term.set_color(romPageForeground,romPageBackground);
-    blankpage();
+    
   }
   displaybuff(pageBuff,0,pageSize,ROM);
 }
 else if (view == VIEW_DIRECTORY){
   if (termMode){
     term.set_color(filePageForeground,filePageBackground);
-    blankpage();
   }
   myFile = SD.open("/");
   myFile.rewindDirectory();
@@ -139,31 +139,28 @@ else if (view == VIEW_DIRECTORY){
 else if (view == VIEW_FILE){
   if (termMode){
     term.set_color(filePageForeground,filePageBackground);
-     blankpage();
+     
   }
   displaybuff(pageBuff,0,pageSize,getFileType(filename));    
 }
 else if (view == VIEW_INFO){
   if (termMode){
-    term.set_color(romPageForeground,romPageBackground);
-     blankpage();
-     
+    term.set_color(romPageForeground,romPageBackground);  
   }
    myFile = SD.open("/DEVICE/");
    myFile.rewindDirectory();
-   printDirectory(myFile,dPage,INFO);
-
-   
+   printDirectory(myFile,dPage,INFO); 
 }
 else if (view == VIEW_BOOT){
 
     if (!SD.begin(24)) {
     oledOut("Error","initialization failed!");
     Serial.println("initialization failed!");
+    while(1){};
     }
     else{
 
-      filename = "Help.txt";
+      filename = "Readme.txt";
      
       displaybuff(pageBuff,0,pageSize,TXT);
        
@@ -208,11 +205,11 @@ else if (view == VIEW_BOOT){
        // return;
   }
   if (line != ""){
-    
-      Serial.println(F("\t-------------------------------------------------------- "));                       //   footer
-      Serial.println("\t" + pad2center(line,58," "));
-      Serial.println(F("\t-------------------------------------------------------- "));
-    
+      if(banners){
+        Serial.println(F("\t------------------------------------------------------------ "));                       //   footer
+        Serial.println("\t" + pad2center(line,58," "));
+        Serial.println(F("\t------------------------------------------------------------ "));
+        }
   } 
 }
 void HelpPage(){
@@ -224,10 +221,14 @@ void HelpPage(){
   }
   Serial.print(F("\r\n\tEEprom Master by Danny Arnold (2017) firmware version "));
   Serial.println(Version + "\r\n");
-  Serial.print(F("------------------------------------------------------------------------------- ")); 
+  Serial.print(F("----------------------------- Help page --------------------------------------- ")); 
+
   lastfilename = filename; 
   filename = "Help.txt";  
-  displaybuff(pageBuff,0,pageSize,TXT);     
+  displaybuff(pageBuff,0,pageSize,TXT);  
+  if (currentPage >= 2){
+    currentPage = 0;
+  }   
   filename = lastfilename; 
 }
 void SettingsPage(){
@@ -239,9 +240,24 @@ void SettingsPage(){
   }
   Serial.print(F("\r\n\tEEprom Master by Danny Arnold (2017) firmware version "));
   Serial.println(Version + "\r\n");
-  Serial.print(F("------------------------------------------------------------------------------- ")); 
+  Serial.print(F("---------------------------- Settings page ------------------------------------ ")); 
   lastfilename = filename; 
-  filename = "Help.txt";  
+  filename = "Settings.ini";  
+  displaybuff(pageBuff,0,pageSize,TXT);     
+  filename = lastfilename; 
+}
+void AboutPage(){
+  char buffer[165];
+  if (termMode){
+    term.set_color(settingsPageForeground,settingsPageBackground);
+    term.cls();
+    term.position(0,0);
+  }
+  Serial.print(F("\r\n\tEEprom Master by Danny Arnold (2017) firmware version "));
+  Serial.println(Version + "\r\n");
+  Serial.print(F("---------------------------- About page ------------------------------------ ")); 
+  lastfilename = filename; 
+  filename = "Readme.txt";  
   displaybuff(pageBuff,0,pageSize,TXT);     
   filename = lastfilename; 
 }
@@ -324,29 +340,15 @@ void dumpTxt(byte *epm,word address,word datalength){
     *x=0;
     
     serialPrintln(lbuf);
-    //oledOut("DEBUG",String(sizeof(lbuf)/ sizeof(lbuf[0])));
-  }
-  //serialPrintln("");
-}
-void blankpage(){   // why?
-
-  term.position(3,0);
-  for (byte ln=0;ln < 16;ln ++){
-    
-    for (int space =0;space < 80;space ++){
-      //Serial.print('.');      
-    }
-    //Serial.println();
-    
-  }
-  term.position(3,0);
+  
+ }
 }
 
 void printinfo(String title,String message){
     count = 0;
     oledOut(title,message);
     if (termMode){
-        Serial.println( title +" "+ message+ "                    ");
+        Serial.println( " " + title +" "+ message+ "                    ");
     }
 
 
