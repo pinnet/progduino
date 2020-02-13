@@ -28,6 +28,17 @@ SOFTWARE.
 #define DEFAULT_SIUNIT char('M')
 #define DEFAULT_ROMSIZE 0xFFFF
 #define DEFAULT_CHUNKSIZE 16
+#define DEFAULT_DEBOUNCE 100
+#define MAX_BRIGHT 30
+#define EASE_TIME 500
+#define FLASH_TIME 100
+#define LONG_PRESS 25
+
+
+#define ROM_OFFSET 8    
+#define FILE_OFFSET 0;    
+#define SETTING_OFFSET 14;    
+
 
 #define PIN_A14 37
 #define PIN_A12 38
@@ -39,9 +50,9 @@ SOFTWARE.
 #define PIN_A2  44
 #define PIN_A1  45
 #define PIN_A0  46
-#define PIN_D0  49
+#define PIN_D0  47
 #define PIN_D1  48
-#define PIN_D2  47
+#define PIN_D2  49
 
 #define PIN_nWE 23
 #define PIN_A13 25
@@ -57,24 +68,53 @@ SOFTWARE.
 #define PIN_D4  35
 #define PIN_D3  36
 
-#define ENCSW  13
-#define ENCA    7
-#define ENCB    6
+#define ENCSW  2
+#define ENCA   3
+#define ENCB   4
 
-#define LED_PIN 4
+#define LED_PIN 11
 #define LED_SER 12
 
 const char hex[] = {
   '0', '1', '2', '3', '4', '5', '6', '7',
   '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
 };
-
-
+enum EncoderSW {
+  UP,DOWN
+};
+enum EncoderDIR {
+  FORWARD,BACKWARD
+};
 enum EditorMode {
   MODE_ROM,
   MODE_FILE,
   MODE_BOOT
 };
+
+enum MenuItem {
+  _FILE_MENUPAGE = 0,
+  _FILE_LOAD = 1,
+  _FILE_NEW = 2,
+  _FILE_WRITE = 3,
+  _FILE_VERIFY = 4,
+  _FILE_ERASE = 5,
+  _FILE_RENAME = 6,
+  _FILE_EXIT = 7,
+  _ROM_MENUPAGE = 8,
+  _ROM_CHANGE = 9,
+  _ROM_WRITE = 10,
+  _ROM_ERASE = 11,
+  _ROM_VERIFY = 12,
+  _ROM_EXIT = 13,
+  _SETTING_MENUPAGE = 14,
+  _SETTING_DAY_TIME =15,
+  _SETTING_SER_BAUD =16,
+  _SETTING_USB_BAUD =17,
+  _SETTING_CHUNKSIZE =18,
+  _SETTING_SLEEP_TIMEOUT =19,
+  _SETTING_EXIT =20
+};
+
 enum ViewMode {
   VIEW_DIRECTORY,
   VIEW_FILE,
@@ -92,31 +132,39 @@ enum DirMode{
   LIST,
   INFO
   };
-enum EncoderStateChange{
-  SELECTED,A,B
-  };
+enum LEDState{
+  OFF,THROB,FLASH,STEADY
+};
+enum LEDColour{
+  RED,GREEN,BLUE,ORANGE,YELLOW,PURPLE,CYAN
+};
 enum SanityCheck{
   UNKNOWN,WRITE,ERASE,ZERO
 };
 enum FileType{
   TXT,ROM,DEV,MD5,INI
 
-}; 
+};
+
 uint8_t R_headerBackground    = BT_BLACK;
-uint8_t R_headerForeground    = BT_YELLOW;
+uint8_t R_headerForeground    = BT_WHITE;
 uint8_t R_footerBackground    = BT_BLACK;
-uint8_t R_footerForeground    = BT_YELLOW;
+uint8_t R_footerForeground    = BT_WHITE;
 uint8_t F_headerBackground    = BT_BLACK;
 uint8_t F_headerForeground    = BT_WHITE;
 uint8_t F_footerBackground    = BT_BLACK;
 uint8_t F_footerForeground    = BT_WHITE;
-
-
+uint8_t cmdlineForeground     = BT_CYAN;
+uint8_t cmdlineBackground    = BT_BLUE;
 uint8_t romPageBackground   = BT_BLACK;
 uint8_t romPageForeground   = BT_GREEN;
 uint8_t filePageBackground  = BT_BLACK;
-uint8_t filePageForeground  = BT_YELLOW;
+uint8_t filePageForeground  = BT_BLUE;
 uint8_t helpPageBackground  = BT_BLACK;
-uint8_t helpPageForeground  = BT_GREEN;
+uint8_t helpPageForeground  = BT_WHITE;
 uint8_t settingsPageBackground  = BT_BLACK;
 uint8_t settingsPageForeground  = BT_BLUE;
+uint8_t alertPageForeground  = BT_YELLOW;
+uint8_t alertPageBackground  = BT_BLUE;
+uint8_t errorPageForeground  = BT_WHITE;
+uint8_t errorPageBackground  = BT_RED;

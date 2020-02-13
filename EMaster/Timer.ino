@@ -21,13 +21,23 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+void pauseInt(bool state){
 
+    if (state){
+        encoderEnd();
+        Timer3.detachInterrupt();  
+    }
+    else{
+        encoderBegin();
+        Timer3.attachInterrupt(timerint);
+    }   
+
+}
 void sleep(){
 
     if(count <= TIMEOUT) return;
     count = 0;
-    display.clearDisplay();
-    display.display();
+    ResetDisplay = true;
 }
 
 void timerint(){
@@ -36,16 +46,33 @@ void timerint(){
     if(!bufferLock){
         if (Serial.available() > 0){
             lineRdy = (readline(Serial.read(),buf,16) >=1) ? true : false;     
-            /*switch(checkEncoder())
-            {
-                case A :
-                    break;
-                case B :
-                    break;
-                case SWITCH :
-                    break;
-            } */
+           
+        }
     }
- }
+    if (count % 50) GetTime = true;
+    if(timerRun){    
+        if(count % 10 == 0 ) encswTimer ++;
+        if(encswTimer >= LONG_PRESS) {
+            ResetFunc();
+        }
+    }
+    if(count % 15 == 0) pollLED();
+    if(asyncRun){
+        if(count % 100 == 0) asyncOLED(count/100);
+    }
 
+}
+
+void timerStart(){
+
+    encswTimer = 0;
+    timerRun = true;
+
+} 
+unsigned int timerStop(){
+
+    unsigned int retint = encswTimer;
+    encswTimer = 0;
+    timerRun = false;
+    return retint;
 }

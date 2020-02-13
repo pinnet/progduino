@@ -27,11 +27,13 @@ void changeMode(){
       if(cmd[1] != 0){ 
           
         if(cmd[1][0]== 'f' || cmd[1][0] == 'F' ){
+
             currentMode = MODE_FILE;
             view = VIEW_FILE;
 
         } else if(cmd[1][0]== 'd' || cmd[1][0] == "D" ){
-
+ 
+           
             currentMode = MODE_ROM;
             view = VIEW_ROM;
         }
@@ -44,7 +46,7 @@ void zero(){
 
   doFunction=ZERO;
   if (!sure && termMode){
-     printinfo("Zero device ","Are you Sure ?");
+     printerror("Zero device ","Are you Sure ?");
   } else {
 
       FormatPage(0);
@@ -61,7 +63,7 @@ bool verifyPage(byte page){
 
     byte b = 0;
     int addr = page * pageSize;
-   
+    
     GetRomPage(page);
     myFile=SD.open(filename);
     
@@ -72,7 +74,6 @@ bool verifyPage(byte page){
       if (pageBuff[i] != b){
         return false;
       }
-      
   }
   myFile.close();
   return true;
@@ -81,29 +82,22 @@ void verify(){
   unsigned int addr = 0;
   static int size = pageSize;
   byte b = 0;
-  
-
+ 
   myFile=SD.open(filename);
     for (unsigned int a = 0 ; a <= (romSize / 256) ; a ++){
       currentPage = a ; 
       GetRomPage(a);
-      if(termMode) term.position(22,0);
       printinfo("Verify Device Page "+String(a),filename);
       
       for ( int i= 0;i < size;i++){
-
         myFile.seek(addr); 
         b = myFile.read();
      if (pageBuff[i] != b){
-      printinfo("Error","Device verify FAIL");
-      Serial.print(a,DEC);
-      Serial.print("-");
-      Serial.print(i,HEX);
-      Serial.print(":");
-      Serial.print(pageBuff[i],HEX);
-      Serial.print("!=");
-      Serial.println(b,HEX);
-        
+      printerror("Error","Device verify FAIL");
+      command_line = ">Page " + String(a) + " : " + String(i) + ": Error " + String(b) + " Expected " + String(pageBuff[i]) + " Returned " ;
+      led_colour = RED;
+      led_state = FLASH;
+              
       myFile.close();
       return;
      }
@@ -113,6 +107,8 @@ void verify(){
   myFile.close();
   if(termMode) term.position(22,0);
   printinfo("Verify","Device Pass");
+  led_colour = GREEN;
+  led_state = FLASH;
 }
 void setchunksize(){
   if (cmd[1].toInt() > 0){
@@ -180,11 +176,14 @@ void setunit(){
       else { siunit = cmd[1][0]; }    
          EEPROM.write(PSLOC_SIUNIT, siunit);
 }
-void erase(){
 
+void erase(){
+  led_colour = RED;
+  led_state = THROB;
 
   doFunction=ERASE;
   lastfilename = filename;
+  led_state = FLASH;
   if (view == VIEW_DIRECTORY){
 
     if (cmd[1]){
@@ -203,7 +202,7 @@ void erase(){
 
 
     if (!sure && termMode){
-            printinfo("Erase "+ filename,"Are you Sure ?");
+            printerror("Erase "+ filename,"Are you Sure ?");
         } else {
             printinfo("Erasing",filename);
             SD.remove(filename);
@@ -212,7 +211,7 @@ void erase(){
         }   
   } else if (currentMode == MODE_ROM){
       if (!sure && termMode){
-        printinfo("Erase Device","Are you Sure ?");
+        printerror("Erase Device","Are you Sure ?");
       } else {  
             eeerase(); 
       }
@@ -223,17 +222,19 @@ void erase(){
 
 
 void write(){
-
+  
   if(cmd[1]){ filename = cmd[1];} 
+  led_colour = RED;
+  led_state = THROB;
 
   doFunction=WRITE;
   
   if (currentMode == MODE_ROM){
      if (!sure && termMode){
-        printinfo("Write to "+ filename,"Are you Sure ?");
+        printerror("Write to "+ filename,"Are you Sure ?");
      } else { 
            // todo. find a more robust filter 
-
+        pauseInt(true);
         if (SD.exists(filename)){
             SD.remove(filename);
         } 
@@ -259,10 +260,12 @@ void write(){
       unsigned int offset = 0;
       if(cmd[1]) offset = cmd[1].toInt();
       if (!sure && termMode){
-            printinfo("Write to device","Are you Sure ?");
+            printerror("Write to device","Are you Sure ?");
       } else { 
+            pauseInt(true);
              // if (offset > (romSize / 256)) offset = 0;
             for (unsigned int a =0 ; a <= (romSize / 256) ; a ++){
+              led_state = STEADY;
               myFile = SD.open(filename);
               currentPage = a ;
               GetFilePage(a);
@@ -272,7 +275,9 @@ void write(){
               myFile.close();
               delay(100); 
               if(!verifyPage(a)){
-                  printinfo("Error","Writing to Device");
+                  led_state = FLASH;
+                  printerror("Error","Writing to Device");
+                  pauseInt(false);
                   return;
               } 
             }
@@ -281,8 +286,34 @@ void write(){
       }
     }
       sure = false;
-      memset(buf,0,16);     
-  }
+      memset(buf,0,16);
+      pauseInt(false);    
+}
+
+void dump(){
+    termMode = false; 
+    banners =  false;
+    pauseInt(true);
+    
+    if(cmd[1].length() != 1){ 
+        if(cmd[1].toInt() > 0){
+          int pages = cmd[1].toInt();
+          for (int i = 0;i < pages;i++){
+            currentPage = i;
+            DisplayCurrentPage();
+          }
+        }
+    }
+    else { 
+    } 
+    banners =  true;
+    pauseInt(false); 
+}
+
+
+
+
+
 
 void(* ResetFunc) (void) = 0; //declare reset function @ address 0
 void FactoryReset(){

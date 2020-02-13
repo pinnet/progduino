@@ -9,7 +9,8 @@
                 "C:\\Users\\danny\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\avr\\1.8.2\\**",
                 "C:\\Users\\danny\\Documents\\Arduino\\libraries\\**",
                 "C:\\Users\\danny\\Documents\\Arduino\\libraries\\Adafruit_GFX_Library\\**",
-                "C:\\Users\\danny\\Documents\\Arduino\\libraries\\TimerThree\\**"
+                "C:\\Users\\danny\\Documents\\Arduino\\libraries\\TimerThree\\**",
+                "c:\\"
             ],
             "forcedInclude": [
                 "C:\\Users\\danny\\AppData\\Local\\Arduino15\\packages\\arduino\\hardware\\avr\\1.8.2\\cores\\arduino\\Arduino.h"

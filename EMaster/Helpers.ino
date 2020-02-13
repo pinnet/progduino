@@ -122,6 +122,70 @@ byte ReadData()
   return(b);
 }
 
+void pollLED(){
+    
+    int _col = 0;
+    switch(led_state){
+
+      case FLASH :
+        if (flash){ 
+           _col = (int)flashing.SetSetpoint(MAX_BRIGHT);
+          if ( _col >= MAX_BRIGHT) flash = false;
+        }
+       else { 
+          _col = (int)flashing.SetSetpoint(0);
+          if ( _col <= 0) flash = true;
+        }
+      break;
+
+
+      case THROB :
+        if (easein){ 
+           _col = (int)easing.SetSetpoint(MAX_BRIGHT);
+          if ( _col >= MAX_BRIGHT) easein = false;
+        }
+       else { 
+          _col = (int)easing.SetSetpoint(0);
+          if ( _col <= 0) easein = true;
+        }
+      break;
+ 
+      case STEADY :
+      _col = MAX_BRIGHT;
+      break;
+
+      case OFF :
+        _col = 0;
+      break;
+    }
+  
+    switch (led_colour){
+
+      case RED :
+        pixels.setPixelColor(0,_col,0,0);
+      break;
+      case GREEN :
+        pixels.setPixelColor(0,0,_col,0);
+      break;
+      case BLUE :
+        pixels.setPixelColor(0,0,0,_col);
+      break;
+      case YELLOW :
+        pixels.setPixelColor(0,_col,_col,0);
+      break;
+      case ORANGE :
+        pixels.setPixelColor(0,_col,_col * 0.75,0);
+      break;
+      case PURPLE :
+        pixels.setPixelColor(0,_col * 0.50,0,_col);
+      break;
+      case CYAN :
+        pixels.setPixelColor(0,0,_col,_col);
+      break;
+    }
+    
+    pixels.show();
+}
 // converts one character of a HEX value into its absolute value (nibble)
 byte HexToVal(byte b)
 {
@@ -189,6 +253,7 @@ bool areyousure(){
     else{  return false;   }
     }
  }
+
 int readline(int readch, char *buffer, int len)
 {
   static int pos = 0;
@@ -224,8 +289,8 @@ int readline(int readch, char *buffer, int len)
         break;
       case '\b': // goback 
        if (termMode){
-          buffer[pos--] = 0;
-          rpos = pos;
+          buffer[pos] = 0;
+          rpos = pos--;
           pos = 0;// Reset position index ready for next time
           return rpos;
         }
@@ -233,6 +298,7 @@ int readline(int readch, char *buffer, int len)
         
       case '\t': // Return on TAB
         if (termMode){
+          command_line = ">";
           buffer[pos++] = char('m');
           rpos = pos;
           pos = 0;// Reset position index ready for next time
@@ -285,18 +351,12 @@ int readline(int readch, char *buffer, int len)
           pos = 0;// Reset position index ready for next time
           return rpos;
       default:
-     
-         
-
-            if(termMode){
-              serialPrint(String(char(readch)));
+           if(termMode){
+              command_line += String(char(readch));
             }
             buffer[pos++] = readch;
             buffer[pos] = 0;
-         
-          
-        
-    }
+      }
   }
 
   // No end of line has been found, so return -1.
@@ -358,3 +418,62 @@ FileType getFileType(String filename){
   }
 return ROM;
 }
+
+void encoderBegin(){
+    attachInterrupt(digitalPinToInterrupt(ENCSW), select, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(ENCA), rotate, FALLING);
+}
+void encoderEnd(){
+    detachInterrupt(digitalPinToInterrupt(ENCSW));
+    detachInterrupt(digitalPinToInterrupt(ENCA));
+}
+void select(){
+    byte state = digitalRead(ENCSW);
+    EncoderSwitchState = state ? UP : DOWN;
+    EncoderSWInt = true;
+}
+
+
+void rotate(){
+   byte dir = digitalRead(ENCB);
+   EncoderDirection =  dir ? FORWARD : BACKWARD;
+   EncoderDIRInt = true;
+}
+
+
+String readPROGMEMtoString(const char * conchr){ 
+
+    
+    uint8_t i=0, j=0;
+    char myChar;
+    String cd_items = "";
+    for (byte k = 0; k < strlen_P(conchr); k++) {
+       cd_items += myChar = pgm_read_byte_near(conchr + k);
+    }    
+    return cd_items;
+       
+}
+
+String getDateTime(){
+      
+        String out = "";
+        out = DOW[t.wday -1];
+        out += " ";
+        out += String(t.mday);
+        out += " ";
+        out += MOY[t.mon -1];
+        out += " ";
+        out += String( t.year);
+        out += " ";
+        out += String(t.hour);
+        out += ":";
+        if (t.min < 10) out += "0";
+        out += String(t.min);
+        out += ":";
+        if (t.sec < 10) out += "0"; 
+        out += String(t.sec);
+
+        return out;
+      
+      
+ }

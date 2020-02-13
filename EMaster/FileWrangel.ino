@@ -21,11 +21,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
+void dateTime(uint16_t* date, uint16_t* time)
+{
+  *date = FAT_DATE(t.year, t.mon, t.mday);
+  *time = FAT_TIME(t.hour, t.min, t.sec);
+}
 void SaveBuffer(unsigned long adr, unsigned int size,File myFile){
  char b = 0;
  if (myFile) {
-  
+  //SdFile::dateTimeCallback(dateTime);
  // myFile.print(hex[ (currentPage  & 0xF0) >> 4]);
  // myFile.print(hex[ (currentPage & 0x0F) ]);
  // myFile.print(hex[ (adr  & 0xF0) >> 4]);
@@ -49,7 +53,7 @@ void SaveBuffer(unsigned long adr, unsigned int size,File myFile){
   }
   // if the file isn't open, pop up an error:
   else {
-    Serial.println("error opening file");
+    printerror("FILE","error opening file");
   }
 
 }
@@ -65,7 +69,7 @@ void printDirectory(File dir,int dpage,DirMode mode) {
       }
    }
    if(mode == INFO) Serial.println(F("\t\tPart Number\t\tDescription"));
-   if(mode == LIST) Serial.println(F("\t\t\tFilename\tSize"));
+   if(mode == LIST) Serial.println(F("\t\tFilename\tModifed\t\tSize"));
    for (int lines = 0; lines < 14; lines ++){
 
     File entry =  dir.openNextFile();
@@ -86,7 +90,7 @@ void printDirectory(File dir,int dpage,DirMode mode) {
      
         if (!entry.isDirectory()) {
 
-           if(mode == LIST){ Serial.print("\t\t\t");}
+           if(mode == LIST){ Serial.print("\t\t");}
            else{             Serial.print("\t\t");}
           
           Serial.print(index ++,HEX);
@@ -96,6 +100,8 @@ void printDirectory(File dir,int dpage,DirMode mode) {
           
             if(mode == LIST){ 
                               Serial.print(fname);
+                              Serial.print("\t");
+                              Serial.print(entry.name());
                               Serial.print("\t");
                               Serial.print(entry.size(), DEC);
                               Serial.println(" Bytes");}
@@ -141,8 +147,9 @@ void printDirectory(File dir,int dpage,DirMode mode) {
    
 }
 void GetFilePage(int page){
-      
+      pauseInt(true);
       ReadFileIntoBuffer((page * pageSize), pageSize);  
+      pauseInt(false);
 }
 void ReadFileIntoBuffer(unsigned long addr, int size)
 {
@@ -150,6 +157,7 @@ void ReadFileIntoBuffer(unsigned long addr, int size)
   byte b;
  
   myFile=SD.open(filename);
+
   
   for ( int i= 0;i < size;i++){
 

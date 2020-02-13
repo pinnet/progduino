@@ -86,6 +86,7 @@ void GetPage(){
 
 void DisplayCurrentPage(){
   GetPage();
+  command_line = ">";
   String line = "";
   
   if (termMode) SetTerm();
@@ -97,13 +98,20 @@ void DisplayCurrentPage(){
         line = "Device : "+ devicetype +"  : Page " + String(currentPage) + " / "+ String((romSize /256)) +" : Size "+ String(romSize)+" bytes";
 
         oledOut("Device",devicetype);
+        led_colour = GREEN;
+        led_state = STEADY;
+
+        
   }
   else if (currentMode == MODE_FILE){
        if (termMode)  term.set_color(F_headerForeground,F_headerBackground);
         line = "File : " + filename + " : Page " + String(currentPage) + " / "+ String((romSize /256)) + " : "; 
-        line += (cardStatus != SDS_MOUNTED) ?  "Not Mounted" : "file count";
-
+        line += (currentPage < 10) ? " " : "" ;
+        line += getDateTime();
+  
         oledOut("File",filename);
+        led_colour = BLUE;
+        led_state = STEADY;
    }
    else if (currentMode == MODE_BOOT){
      oledOut("Eeprom Master "+ Version,"(c) Danny Arnold 2017");
@@ -154,23 +162,22 @@ else if (view == VIEW_INFO){
 else if (view == VIEW_BOOT){
 
     if (!SD.begin(chipSelect)) {
-    oledOut("Error","initialization failed!");
+    printerror("Error","initialization failed!");
+    led_colour = RED;
+    led_state = FLASH;
     Serial.println("initialization failed!");
-    while(1){};
+    //while(1){};
     }
     else{
-
       filename = "Readme.txt";
-     
-      displaybuff(pageBuff,0,pageSize,TXT);
-       
+      displaybuff(pageBuff,0,pageSize,TXT);      
       filename = lastfilename; 
       if (!SD.exists(filename)){
         myFile = SD.open(filename, FILE_WRITE);
         myFile.close();
       }
     } 
-    view = VIEW_ROM;
+    //view = VIEW_ROM;
 }
  //------------------------------------------------------------------------------------------------------------------------
   if (view == VIEW_ROM){
@@ -193,13 +200,12 @@ else if (view == VIEW_BOOT){
              term.set_color(F_footerForeground,F_footerBackground);}
           else{}
 
-          
           term.position(19,0);
         }
         line = "Choose Device";
   }
   if (currentMode == MODE_BOOT){
-        currentMode = MODE_ROM;
+        //currentMode = MODE_ROM;
         
         line = "Press tab to continue";
        // return;
@@ -213,6 +219,9 @@ else if (view == VIEW_BOOT){
   } 
 }
 void HelpPage(){
+
+  led_colour = ORANGE;
+  led_state = STEADY;
   char buffer[165];
   if (termMode){
     term.set_color(helpPageForeground,helpPageBackground);
@@ -232,6 +241,7 @@ void HelpPage(){
   filename = lastfilename; 
 }
 void SettingsPage(){
+  
   char buffer[165];
   if (termMode){
     term.set_color(settingsPageForeground,settingsPageBackground);
@@ -343,19 +353,113 @@ void dumpTxt(byte *epm,word address,word datalength){
   
  }
 }
+void printerror(String error,String message){
+    count = 0;
+    oledOut(error,message);
+    if (termMode){
+        String border = "";
+        term.set_color(errorPageForeground,errorPageBackground);
+        term.show_cursor(false);
+        term.position(10, 10);       
+        Serial.println(  pad2center(error +" "+ message,58," ") );
+        
+        border += "**";
+        for (int i=0;i < error.length(); i++){
+          border += "*";  
+        }
+        for (int i=0;i < message.length(); i++){
+          border += "*";  
+        }
+        border += "**";
+        term.position(9, 10);
+        Serial.println(  pad2center(border,58," ") );
+        term.position(11, 10);
+        Serial.println(  pad2center(border,58," ") );
+        updateTerminal();
+    }
 
+}
 void printinfo(String title,String message){
     count = 0;
     oledOut(title,message);
     if (termMode){
-        Serial.println( " " + title +" "+ message+ "                    ");
+        String border = "";
+        term.set_color(alertPageForeground,alertPageBackground);
+        term.show_cursor(false);
+        term.position(10, 8);       
+        Serial.println(  pad2center(title +" "+ message,58," ") );
+        
+        border += "**";
+        for (int i=0;i < title.length(); i++){
+          border += "*";  
+        }
+        for (int i=0;i < message.length(); i++){
+          border += "*";  
+        }
+        border += "**";
+        term.position(9, 8);
+        Serial.println(  pad2center(border,58," ") );
+        term.position(11, 8);
+        Serial.println(  pad2center(border,58," ") );
+        updateTerminal();
     }
-
-
-
 }
 
 
+void asyncOLED(unsigned int count){
+  static int number_of_items = 0;
+  static String menu_items[10];
+  static int itr;
+  String out = "";
+  uint8_t i=0, j=0;  
+  if (count == 0){
+      asyncRun = true;
+      
+      while ( j <cd_menu_items.length()) {
+        
+          if (cd_menu_items.charAt(j)==',') {
+              menu_items[i] = out;
+              out = "";
+              i++;
+          }
+          else {
+              out += (char)cd_menu_items.charAt(j);
+          }
+          j++;
+      }
+      menu_items[i] = out;
+      number_of_items = i +1;     
+  }      
+  else{
+
+    if (EncoderDirection == BACKWARD) itr--;
+    else itr ++;
+    if (itr <= 0) itr = number_of_items;
+    if (itr >= number_of_items + 1) itr = 1;
+    command_page = menu_items[itr -1];
+    currentItem = itr;
+    }  
+}
+
+
+void oledCommandPage(EditorMode mode){
+  
+        switch(mode){
+          case MODE_ROM :
+          page_name = "Device" ;
+          break;
+          case MODE_FILE :
+          page_name = "File" ;
+          break;
+          case MODE_BOOT :
+          page_name = "Setting" ;
+          break;
+        } 
+
+        cd_menu_items = readPROGMEMtoString(MENU_PAGE);
+        if(!asyncRun) asyncOLED(0);
+
+}
 void oledOut(String head, String msg){
     display.setCursor(0, 0);
     display.clearDisplay();
@@ -383,4 +487,73 @@ void UnsetTerm(){
       term.set_color(BT_WHITE,BT_BLACK);
       term.cls();
       term.position(0,0);  
+}
+
+void encoderMenu(EditorMode mode){
+ 
+  switch(mode){
+
+    case MODE_BOOT :
+        led_colour = CYAN;
+        led_state = THROB;
+        oledCommandPage(mode);
+    break;
+
+    case MODE_FILE :
+        led_colour = BLUE;
+        led_state = THROB;
+        oledCommandPage(mode);
+    break;
+
+    case MODE_ROM :
+        led_colour = GREEN;
+        led_state = THROB;
+        oledCommandPage(mode);
+    break;
+
+  }
+  
+}
+void menuEngine(MenuItem item,EditorMode mode){
+
+    int ofst = 0;
+
+    switch(mode){
+        case MODE_ROM :
+          ofst = ROM_OFFSET;
+          break;
+          case MODE_FILE :
+          ofst = FILE_OFFSET;
+          break;
+          case MODE_BOOT :
+          ofst = SETTING_OFFSET;
+          break;
+          
+
+    }
+    Serial.print(item + ofst);
+    switch (item + ofst){
+
+        case _ROM_EXIT :
+        case _FILE_EXIT :
+        case _SETTING_EXIT :
+            ResetFunc();
+        break;
+        case _ROM_VERIFY :
+        verify();
+        break;
+    }
+}
+
+void updateTerminal(){
+      if (currentMode == MODE_FILE){
+        term.show_cursor(false);
+        term.set_color(F_headerForeground,F_headerBackground);
+        term.position(1, 46);
+        Serial.print(getDateTime());     
+        }
+        term.position(25,0);
+        term.set_color(cmdlineForeground,cmdlineBackground);
+        Serial.print(command_line);
+        
 }
