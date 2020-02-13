@@ -36,7 +36,7 @@ void timerint(){
     if(!bufferLock){
         if (Serial.available() > 0){
             lineRdy = (readline(Serial.read(),buf,16) >=1) ? true : false;     
-            switch(checkEncoder())
+            /*switch(checkEncoder())
             {
                 case A :
                     break;
@@ -44,7 +44,7 @@ void timerint(){
                     break;
                 case SWITCH :
                     break;
-            }
+            } */
     }
  }
 

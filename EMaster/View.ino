@@ -153,7 +153,7 @@ else if (view == VIEW_INFO){
 }
 else if (view == VIEW_BOOT){
 
-    if (!SD.begin(24)) {
+    if (!SD.begin(chipSelect)) {
     oledOut("Error","initialization failed!");
     Serial.println("initialization failed!");
     while(1){};

@@ -62,7 +62,7 @@ SOFTWARE.
 #define ENCB    6
 
 #define LED_PIN 4
-#define LED_SER 5
+#define LED_SER 12
 
 const char hex[] = {
   '0', '1', '2', '3', '4', '5', '6', '7',
