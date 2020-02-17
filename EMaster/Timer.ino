@@ -25,11 +25,13 @@ void pauseInt(bool state){
 
     if (state){
         encoderEnd();
-        Timer3.detachInterrupt();  
+        Timer3.detachInterrupt(); 
+        return; 
     }
     else{
         encoderBegin();
         Timer3.attachInterrupt(timerint);
+        return;
     }   
 
 }
@@ -51,7 +53,7 @@ void timerint(){
     }
     if (count % 50) GetTime = true;
     if(timerRun){    
-        if(count % 10 == 0 ) encswTimer ++;
+        if(count % 100 == 0 ) encswTimer ++;
         if(encswTimer >= LONG_PRESS) {
             ResetFunc();
         }
@@ -69,10 +71,8 @@ void timerStart(){
     timerRun = true;
 
 } 
-unsigned int timerStop(){
+void timerStop(){
 
-    unsigned int retint = encswTimer;
     encswTimer = 0;
     timerRun = false;
-    return retint;
 }

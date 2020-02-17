@@ -75,7 +75,7 @@ LEDState led_state = OFF;
 LEDColour led_colour = GREEN;
 File root;
 int16_t last, value;
-const String Version = "1.10A"; 
+const String Version = "1.11A"; 
 bool termMode = true;                         // Term Mode on off
 bool menuMode = false;
 bool sure = false;                            // Sanity Check
@@ -105,7 +105,7 @@ bool timerRun = false;
 bool ResetDisplay = false;
 bool GetTime = false;
 String cmd[3];
-static String cd_menu_items;
+String cd_menu_items;
 String command_line = ">";
 String command_page = "";
 String previous_command_page = "";
@@ -169,7 +169,8 @@ void setup()
     SetAddress(0);
     DisplayCurrentPage();
     encoderBegin();
-    
+    curdir[0]="TEST.ROM";
+    curdir[1]="TEST.ROM";
   
 }
 /*******************************************************************************************************************************
@@ -180,30 +181,32 @@ void setup()
 void loop()
 {
     if(EncoderSWInt) {
+     
       count = 0;
       int menuOffset;
       switch(EncoderSwitchState){
-
+            
             case DOWN :
               timerStart();
             break;
             
             case UP :
+              timerStop();
               if(menuMode){
                   menuEngine(currentItem,currentMode);
+                  currentItem = 0;
               }
               else{
                 menuMode = true;
                 encoderMenu(currentMode);
               } 
-              timerStop();
             break;
-         
       }
+      EncoderSWInt = false; 
       
-      EncoderSWInt = false;
     } 
     if(EncoderDIRInt){
+      
       count = 0;
       if (!menuMode){
         changeMode();
@@ -257,6 +260,8 @@ void loop()
                     hex[0] = '0';
                     hex[1] = key;
                     int filenum = strtol(hex, NULL, 16);
+                    Serial.println("------------------------------wtf");
+                    Serial.println(curdir[filenum]);
                     filename = curdir[filenum];
                     view = VIEW_FILE;
                     DisplayCurrentPage();

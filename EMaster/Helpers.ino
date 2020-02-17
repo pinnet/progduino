@@ -428,6 +428,7 @@ void encoderEnd(){
     detachInterrupt(digitalPinToInterrupt(ENCA));
 }
 void select(){
+    
     byte state = digitalRead(ENCSW);
     EncoderSwitchState = state ? UP : DOWN;
     EncoderSWInt = true;
@@ -435,6 +436,7 @@ void select(){
 
 
 void rotate(){
+  
    byte dir = digitalRead(ENCB);
    EncoderDirection =  dir ? FORWARD : BACKWARD;
    EncoderDIRInt = true;

@@ -106,8 +106,7 @@ void DisplayCurrentPage(){
   else if (currentMode == MODE_FILE){
        if (termMode)  term.set_color(F_headerForeground,F_headerBackground);
         line = "File : " + filename + " : Page " + String(currentPage) + " / "+ String((romSize /256)) + " : "; 
-        line += (currentPage < 10) ? " " : "" ;
-        line += getDateTime();
+        line += "                    ";
   
         oledOut("File",filename);
         led_colour = BLUE;
@@ -532,17 +531,23 @@ void menuEngine(MenuItem item,EditorMode mode){
 
     }
     Serial.print(item + ofst);
+    encoderEnd();
     switch (item + ofst){
 
         case _ROM_EXIT :
         case _FILE_EXIT :
+            menuMode = false;
+            changeMode();
+            break;
         case _SETTING_EXIT :
             ResetFunc();
-        break;
+            break;
+        case _FILE_VERIFY : 
         case _ROM_VERIFY :
-        verify();
-        break;
+            verify();       
+            break;
     }
+    encoderBegin();
 }
 
 void updateTerminal(){

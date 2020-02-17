@@ -25,11 +25,13 @@ void dateTime(uint16_t* date, uint16_t* time)
 {
   *date = FAT_DATE(t.year, t.mon, t.mday);
   *time = FAT_TIME(t.hour, t.min, t.sec);
+  
 }
 void SaveBuffer(unsigned long adr, unsigned int size,File myFile){
  char b = 0;
  if (myFile) {
-  //SdFile::dateTimeCallback(dateTime);
+    
+    
  // myFile.print(hex[ (currentPage  & 0xF0) >> 4]);
  // myFile.print(hex[ (currentPage & 0x0F) ]);
  // myFile.print(hex[ (adr  & 0xF0) >> 4]);
@@ -41,6 +43,7 @@ void SaveBuffer(unsigned long adr, unsigned int size,File myFile){
   {
   b = pageBuff[x];
   myFile.write(b);
+  
   // myFile.print(hex[ (pageBuff[x] & 0xF0) >> 4 ]);
   // myFile.print(hex[ (pageBuff[x] & 0x0F)      ]); 
   }
@@ -77,7 +80,6 @@ void printDirectory(File dir,int dpage,DirMode mode) {
       if (pg > 0) {
           if (termMode){ 
             term.position(18,0);
-            term.set_attribute(BT_REVERSE);
             Serial.print(F("\t\t        0: << Back                       "));
             term.set_attribute(BT_NORMAL);
             term.set_attribute(BT_BOLD);
@@ -95,13 +97,14 @@ void printDirectory(File dir,int dpage,DirMode mode) {
           
           Serial.print(index ++,HEX);
           Serial.print(":");
-          curdir[index -1] = fname;
+          Serial.print(fname);
+          Serial.print(index,HEX);
           
           
             if(mode == LIST){ 
                               Serial.print(fname);
-                              Serial.print("\t");
-                              Serial.print(entry.name());
+                              //Serial.print("\t");
+                              //Serial.print(entry.name());
                               Serial.print("\t");
                               Serial.print(entry.size(), DEC);
                               Serial.println(" Bytes");}
@@ -129,7 +132,7 @@ void printDirectory(File dir,int dpage,DirMode mode) {
        if (index > 14){
         if (termMode){ 
           term.position(18,0);
-          term.set_attribute(BT_REVERSE);
+          
           Serial.print(F("\t\t        F: More...    "));
           if (pg > 0) {
              Serial.print(F("  0: << Back        "));

@@ -82,18 +82,17 @@ void verify(){
   unsigned int addr = 0;
   static int size = pageSize;
   byte b = 0;
- 
   myFile=SD.open(filename);
     for (unsigned int a = 0 ; a <= (romSize / 256) ; a ++){
       currentPage = a ; 
       GetRomPage(a);
-      printinfo("Verify Device Page "+String(a),filename);
+      printinfo("Verify Page "+String(a),filename);
       
       for ( int i= 0;i < size;i++){
         myFile.seek(addr); 
         b = myFile.read();
      if (pageBuff[i] != b){
-      printerror("Error","Device verify FAIL");
+      printerror("Error","Verify FAIL");
       command_line = ">Page " + String(a) + " : " + String(i) + ": Error " + String(b) + " Expected " + String(pageBuff[i]) + " Returned " ;
       led_colour = RED;
       led_state = FLASH;
@@ -106,7 +105,7 @@ void verify(){
   }
   myFile.close();
   if(termMode) term.position(22,0);
-  printinfo("Verify","Device Pass");
+  printinfo("Verify","Pass");
   led_colour = GREEN;
   led_state = FLASH;
 }
@@ -239,6 +238,8 @@ void write(){
             SD.remove(filename);
         } 
         myFile = SD.open(filename, FILE_WRITE);
+        SdFile::dateTimeCallback(dateTime);
+        delay(1000);
         for (unsigned int a = 0 ; a <= (romSize / 256) ; a ++){
           currentPage = a ;
           GetRomPage(a);
