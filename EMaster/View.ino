@@ -546,6 +546,10 @@ void menuEngine(MenuItem item,EditorMode mode){
         case _ROM_VERIFY :
             verify();       
             break;
+        case _SETTING_DAY_TIME :
+            setting_timeDate();       
+            break;
+      
     }
     encoderBegin();
 }
@@ -561,4 +565,13 @@ void updateTerminal(){
         term.set_color(cmdlineForeground,cmdlineBackground);
         Serial.print(command_line);
         
+}
+void setting_timeDate(){
+    encoderEnd();
+    oledOut("SET DATE TIME","12:00 01/01/1970");
+    delay(4000);
+
+
+
+
 }

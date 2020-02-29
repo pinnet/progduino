@@ -97,8 +97,8 @@ void printDirectory(File dir,int dpage,DirMode mode) {
           
           Serial.print(index ++,HEX);
           Serial.print(":");
-          Serial.print(fname);
-          Serial.print(index,HEX);
+          //Serial.print(fname);
+          //Serial.print(index,HEX);
           
           
             if(mode == LIST){ 

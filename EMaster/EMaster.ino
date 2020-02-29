@@ -212,6 +212,7 @@ void loop()
     if(EncoderDIRInt){
       
       count = 0;
+
       if (!menuMode){
         changeMode();
       }
@@ -231,6 +232,9 @@ void loop()
         asyncOLED(1);
         asyncRun = false;
       }
+
+
+
       EncoderDIRInt = false;
     }
 

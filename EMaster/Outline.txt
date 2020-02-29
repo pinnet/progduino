@@ -1,0 +1,14 @@
+                (start)
+                   |
+                   |
+  ---------------------------------------
+
+  Memory Manager
+
+  Task Manager
+   |
+   +   Menu Manager
+   |
+   +   File Manager
+   |  
+   +  Device Manager
