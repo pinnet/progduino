@@ -1,5 +1,7 @@
 #include <ArduinoUnit.h>
+#include "D:\dev\progduino\libraries\MemoryManager\MemoryManager.h"
 
+MemoryManager MyMem();
 
 test(this_should_work){
 
