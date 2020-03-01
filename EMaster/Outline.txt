@@ -3,7 +3,8 @@
                    |
   ---------------------------------------
 
-  Memory Manager
+  Memory Manager uses eeprom to keep a list of pointers and pointer<Type>
+  on reboot memory mamnager clears all ram and resets all vectors and ports
 
   Task Manager
    |
@@ -11,4 +12,4 @@
    |
    +   File Manager
    |  
-   +  Device Manager
+   +   Device Manager

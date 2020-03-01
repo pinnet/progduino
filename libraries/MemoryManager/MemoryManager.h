@@ -5,12 +5,10 @@
 
 class MemoryManager {
 
-private: 
-        Stream *serial;
-
-public: MemoryManager();
 
 
+public: MemoryManager(void);
+        int16_t freeMemory(void);
 
 
 
