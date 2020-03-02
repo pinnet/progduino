@@ -8,9 +8,8 @@ class MemoryManager {
 
 
 public: MemoryManager(void);
-        int16_t freeMemory(void);
-
-
+        int freeMemory(void);
+        bool initialiseRAM(int);
 
 
 

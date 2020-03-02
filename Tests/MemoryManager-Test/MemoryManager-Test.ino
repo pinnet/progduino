@@ -2,33 +2,38 @@
 #include "MemoryManager.h"
 
 MemoryManager MyMem;
-#define CALLOC_AMOUNT 0x1E20 // 7712 Bytes Maximum alloaction MEGA2560 unknown bootloader
+#define CALLOC_AMOUNT 7686 // 7712 Bytes Maximum alloaction MEGA2560 unknown bootloader
 
-uint16_t pointer = NULL;
+byte *pointer = NULL;
  
-test(Test1_FreeMemory){
+test(Test1A_FreeMemory){
     assertMore(MyMem.freeMemory(),0);
 }
-test(Test2_calloc){
+test(Test1B__calloc){
 
-    uint16_t start_mem = MyMem.freeMemory();
+    int start_mem = MyMem.freeMemory();
     pointer = (byte *) calloc(CALLOC_AMOUNT , sizeof(byte));
-    assertNotEqual(pointer,NULL);
-    uint16_t end_mem = MyMem.freeMemory();
+    assertTrue((pointer != NULL));
+    
+    int end_mem = MyMem.freeMemory();
     assertLess(end_mem,start_mem);
-
 }
-test(Test3_free){
+test(Test1C__free){
 
-    uint16_t start_mem = MyMem.freeMemory();
+    int start_mem = MyMem.freeMemory();
     free(pointer);
-    assertNotEqual(pointer,NULL);
-    uint16_t end_mem = MyMem.freeMemory();
+    int end_mem = MyMem.freeMemory();
     assertMore(end_mem,start_mem);
 
 }
+test(Test0_InitRAM){
+    bool init = MyMem.initialiseRAM(CALLOC_AMOUNT);
+    assertTrue(init);
+
+}
 void setup(){
-    Test::min_verbosity = TEST_VERBOSITY_ALL;
+    
+    //Test::min_verbosity = TEST_VERBOSITY_ALL;
     Serial.begin(115200);
     Serial.println(F("---------------------------------"));
     Serial.println(F("Arduino Unit Test - MemoryManager"));
