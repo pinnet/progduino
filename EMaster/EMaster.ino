@@ -60,7 +60,7 @@ Easing flashing(EASE_IN_OUT_CUBIC,FLASH_TIME);
 bool flash = true;
 // todo: ADAFRUIT need to remove dependancy
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-Adafruit_NeoPixel pixels(NUMPIXELS, LED_SER, NEO_RGB + NEO_KHZ400);
+Adafruit_NeoPixel pixels(NUMPIXELS, LED_SER, NEO_GRB  + NEO_KHZ800);
 // todo: atribute author in documentation and show licence
 BasicTerm term(&Serial);
 // RTC 3231

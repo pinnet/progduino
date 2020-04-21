@@ -45,6 +45,10 @@ void sleep(){
 void timerint(){
 
     count ++;
+
+
+
+
     if(!bufferLock){
         if (Serial.available() > 0){
             lineRdy = (readline(Serial.read(),buf,16) >=1) ? true : false;     
@@ -52,6 +56,7 @@ void timerint(){
         }
     }
     if (count % 50) GetTime = true;
+    
     if(timerRun){    
         if(count % 100 == 0 ) encswTimer ++;
         if(encswTimer >= LONG_PRESS) {
